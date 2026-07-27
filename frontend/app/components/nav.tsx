@@ -15,6 +15,9 @@ export function Nav() {
       <div className="flex gap-4 items-center">
         {isLoading ? null : user ? (
           <>
+            <Link href="/decks/mine" className="text-sm underline">
+              My Decks
+            </Link>
             <span className="text-sm text-gray-600">Hi, {user.username}</span>
             <button onClick={logout} className="text-sm underline">
               Log out
