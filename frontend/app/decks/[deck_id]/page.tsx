@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
@@ -195,7 +196,12 @@ export default function DeckDetailPage() {
               {isAdding ? "Adding..." : "Add card"}
             </button>
           </form>
-
+          <Link
+            href={`/decks/${deckId}/edit`}
+            className="text-sm underline mt-6"
+          >
+            Edit deck
+          </Link>
           <button
             onClick={handleDelete}
             className="text-sm text-red-600 underline mt-6"
