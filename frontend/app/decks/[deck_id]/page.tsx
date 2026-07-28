@@ -42,6 +42,9 @@ export default function DeckDetailPage() {
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
+  // Edit-card state
+  const [cardActionError, setCardActionError] = useState<string | null>(null);
+
   async function loadDeck() {
     try {
       const data = await apiFetch<Deck>(`/me/decks/${deckId}`, { token });
@@ -86,6 +89,30 @@ export default function DeckDetailPage() {
       setAddError(err instanceof ApiError ? err.message : "Failed to add card");
     } finally {
       setIsAdding(false);
+    }
+  }
+
+  async function handleRemoveOneCopy(card: DeckCard) {
+    try {
+      if (card.quantity <= 1) {
+        // Last copy — remove the row entirely
+        await apiFetch(`/decks/${deckId}/cards/${card.id}`, {
+          method: "DELETE",
+          token,
+        });
+      } else {
+        // Still copies left — just decrement
+        await apiFetch(`/decks/${deckId}/cards/${card.id}`, {
+          method: "PUT",
+          token,
+          body: { quantity: card.quantity - 1 },
+        });
+      }
+      await loadDeck();
+    } catch (err) {
+      setCardActionError(
+        err instanceof ApiError ? err.message : "Failed to remove card",
+      );
     }
   }
 
@@ -141,17 +168,29 @@ export default function DeckDetailPage() {
       {deck.cards.length === 0 ? (
         <p className="text-gray-500 text-sm">No cards added yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2 mb-6">
-          {deck.cards.map((card) => (
-            <li
-              key={card.id}
-              className="flex justify-between border-b pb-2 text-sm"
-            >
-              <span>{card.card_name}</span>
-              <span className="text-gray-500">×{card.quantity}</span>
-            </li>
-          ))}
+        <ul className="grid grid-cols-2 gap-2 mb-2">
+          {deck.cards.flatMap((card) =>
+            Array.from({ length: card.quantity }).map((_, i) => (
+              <li
+                key={`${card.id}-${i}`}
+                className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+              >
+                <span>{card.card_name}</span>
+                {isOwner && (
+                  <button
+                    onClick={() => handleRemoveOneCopy(card)}
+                    className="text-xs text-red-600 underline"
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            )),
+          )}
         </ul>
+      )}
+      {cardActionError && (
+        <p className="text-red-600 text-sm mb-4">{cardActionError}</p>
       )}
 
       {isOwner && (
