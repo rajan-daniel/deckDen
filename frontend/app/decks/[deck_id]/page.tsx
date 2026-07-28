@@ -30,6 +30,7 @@ export default function DeckDetailPage() {
   const params = useParams();
   const deckId = params.deck_id;
   const { token, user } = useAuth();
+  const router = useRouter();
 
   const [deck, setDeck] = useState<Deck | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -129,8 +130,6 @@ export default function DeckDetailPage() {
   }
 
   const isOwner = user?.id === deck.owner_id;
-
-  const router = useRouter();
 
   async function handleDelete() {
     if (!confirm(`Delete "${deck?.name}"? This can't be undone.`)) return;
