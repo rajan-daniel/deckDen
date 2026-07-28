@@ -47,3 +47,12 @@ class DeckCard(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     deck = relationship("Deck", back_populates="cards")
+
+class UnionArenaCard(Base):
+    __tablename__ = "union_arena_cards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    card_type = Column(String, nullable=True)
+    effect_text = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)

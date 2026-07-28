@@ -30,11 +30,13 @@ async function searchPokemon(query: string): Promise<NormalizedCard[]> {
   }));
 }
 
-async function searchUnionArena(): Promise<NormalizedCard[]> {
-  // No public API currently exists for Union Arena.
-  // Returning an empty list means CardSearch will show "no results" —
-  // this game falls back to manual entry (handled separately).
-  return [];
+async function searchUnionArena(query: string): Promise<NormalizedCard[]> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const res = await fetch(
+    `${API_URL}/card-search/union-arena?q=${encodeURIComponent(query)}`
+  );
+  if (!res.ok) return [];
+  return res.json();
 }
 
 export function getCardSearchFn(game: string) {

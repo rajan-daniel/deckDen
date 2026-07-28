@@ -346,3 +346,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/card-search/union-arena")
+def search_union_arena_cards(q: str, db: Session = Depends(get_db)):
+    if len(q.strip()) < 2:
+        return []
+
+    cards = db.query(models.UnionArenaCard).filter(
+        models.UnionArenaCard.name.ilike(f"%{q}%")
+    ).limit(8).all()
+
+    return [
+        {"name": c.name, "externalId": str(c.id), "imageUrl": c.image_url or ""}
+        for c in cards
+    ]
