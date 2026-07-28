@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { ProtectedRoute } from "@/app/components/protected-route";
-
-const GAMES = [
-  { name: "Yu-Gi-Oh!", slug: "yugioh", color: "bg-purple-600" },
-  { name: "Pokemon", slug: "pokemon", color: "bg-yellow-500" },
-  { name: "Union Arena", slug: "union-arena", color: "bg-blue-600" },
-];
+import { GAMES } from "@/lib/games";
 
 function GamePicker() {
   return (

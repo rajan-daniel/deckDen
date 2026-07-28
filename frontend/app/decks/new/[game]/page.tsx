@@ -5,12 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
-
-const SLUG_TO_GAME: Record<string, string> = {
-  yugioh: "Yu-Gi-Oh!",
-  pokemon: "Pokemon",
-  "union-arena": "Union Arena",
-};
+import { SLUG_TO_GAME } from "@/lib/games";
 
 function NewDeckForm() {
   const params = useParams();

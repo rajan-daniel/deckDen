@@ -37,10 +37,7 @@ export default function DeckDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Add-card form state
   const [addError, setAddError] = useState<string | null>(null);
-
-  // Edit-card state
   const [cardActionError, setCardActionError] = useState<string | null>(null);
 
   async function loadDeck() {
@@ -89,13 +86,11 @@ export default function DeckDetailPage() {
   async function handleRemoveOneCopy(card: DeckCard) {
     try {
       if (card.quantity <= 1) {
-        // Last copy — remove the row entirely
         await apiFetch(`/decks/${deckId}/cards/${card.id}`, {
           method: "DELETE",
           token,
         });
       } else {
-        // Still copies left — just decrement
         await apiFetch(`/decks/${deckId}/cards/${card.id}`, {
           method: "PUT",
           token,
@@ -136,7 +131,7 @@ export default function DeckDetailPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-16 px-4">
+    <div className="max-w-5xl mx-auto mt-16 px-4">
       <div className="flex justify-between items-start mb-2">
         <h1 className="text-2xl font-semibold">{deck.name}</h1>
         {!deck.is_public && (
@@ -153,60 +148,73 @@ export default function DeckDetailPage() {
         <p className="text-gray-700 mt-4">{deck.description}</p>
       )}
 
-      <h2 className="text-lg font-medium mt-8 mb-3">
-        Cards ({deck.cards.reduce((sum, c) => sum + c.quantity, 0)})
-      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        {/* LEFT: search + results grid (owner only) */}
+        {isOwner && (
+          <div>
+            <h2 className="text-lg font-medium mb-3">Add cards</h2>
+            <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
+            {addError && <p className="text-red-600 text-sm mt-2">{addError}</p>}
+          </div>
+        )}
 
-      {deck.cards.length === 0 ? (
-        <p className="text-gray-500 text-sm">No cards added yet.</p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-2 mb-2">
-          {deck.cards.flatMap((card) =>
-            Array.from({ length: card.quantity }).map((_, i) => (
-              <li
-                key={`${card.id}-${i}`}
-                className="flex justify-between items-center border rounded px-3 py-2 text-sm"
-              >
-                <span>{card.card_name}</span>
-                {isOwner && (
-                  <button
-                    onClick={() => handleRemoveOneCopy(card)}
-                    className="text-xs text-red-600 underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </li>
-            )),
+        {/* RIGHT: current deck as an image grid */}
+        <div>
+          <h2 className="text-lg font-medium mb-3">
+            Deck ({deck.cards.reduce((sum, c) => sum + c.quantity, 0)})
+          </h2>
+
+          {deck.cards.length === 0 ? (
+            <p className="text-gray-500 text-sm">No cards added yet.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {deck.cards.flatMap((card) =>
+                Array.from({ length: card.quantity }).map((_, i) => (
+                  <div key={`${card.id}-${i}`} className="relative group">
+                    {card.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={card.image_url}
+                        alt={card.card_name}
+                        className="w-full h-auto rounded border"
+                      />
+                    ) : (
+                      <div className="border rounded p-2 text-xs">
+                        {card.card_name}
+                      </div>
+                    )}
+                    {isOwner && (
+                      <button
+                        onClick={() => handleRemoveOneCopy(card)}
+                        className="absolute inset-0 bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                )),
+              )}
+            </div>
           )}
-        </ul>
-      )}
-      {cardActionError && (
-        <p className="text-red-600 text-sm mb-4">{cardActionError}</p>
-      )}
+
+          {cardActionError && (
+            <p className="text-red-600 text-sm mt-2">{cardActionError}</p>
+          )}
+        </div>
+      </div>
 
       {isOwner && (
-        <>
-          <div className="border-t pt-6 mt-6">
-            <h3 className="text-sm font-medium mb-3">Add a card</h3>
-            <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
-            {addError && (
-              <p className="text-red-600 text-sm mt-2">{addError}</p>
-            )}
-          </div>
-          <Link
-            href={`/decks/${deckId}/edit`}
-            className="text-sm underline mt-6"
-          >
+        <div className="flex gap-4 mt-8 border-t pt-6">
+          <Link href={`/decks/${deckId}/edit`} className="text-sm underline">
             Edit deck
           </Link>
           <button
             onClick={handleDelete}
-            className="text-sm text-red-600 underline mt-6"
+            className="text-sm text-red-600 underline"
           >
             Delete deck
           </button>
-        </>
+        </div>
       )}
     </div>
   );

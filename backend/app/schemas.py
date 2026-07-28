@@ -77,3 +77,10 @@ class DeckCardResponse(BaseModel):
 
 class DeckWithCardsResponse(DeckResponse):
     cards: list[DeckCardResponse] = Field(default_factory=list)
+
+class UserSearchResult(BaseModel):
+    id: int
+    username: str
+
+    class Config:
+        from_attributes = True

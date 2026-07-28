@@ -315,6 +315,27 @@ def delete_deck_card(
 
 # Card endpoints
 
+@app.get("/users/{username}/decks", response_model=list[schemas.DeckResponse])
+def get_user_public_decks(username: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == username).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return db.query(models.Deck).filter(
+        models.Deck.owner_id == user.id,
+        models.Deck.is_public.is_(True),
+    ).all()
+
+@app.get("/users/search", response_model=list[schemas.UserSearchResult])
+def search_users(q: str, db: Session = Depends(get_db)):
+    if len(q.strip()) < 2:
+        return []
+
+    return db.query(models.User).filter(
+        models.User.username.ilike(f"%{q}%")
+    ).limit(8).all()
+
 # CORS
 from fastapi.middleware.cors import CORSMiddleware
 

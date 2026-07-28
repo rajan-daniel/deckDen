@@ -32,44 +32,38 @@ export function CardSearch({ game, onSelectCard }: Props) {
   }, [query, game]);
 
   return (
-    <div className="relative">
+    <div>
       <input
         type="text"
         placeholder="Search for a card..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="border rounded px-3 py-2 text-sm w-full"
+        className="border rounded px-3 py-2 text-sm w-full mb-3"
       />
 
-      {isSearching && <p className="text-xs text-gray-400 mt-1">Searching...</p>}
+      {isSearching && <p className="text-xs text-gray-400">Searching...</p>}
 
       {!isSearching && query.trim().length >= 2 && results.length === 0 && (
-        <p className="text-xs text-gray-400 mt-1">No results found.</p>
+        <p className="text-xs text-gray-400">No results found.</p>
       )}
 
-      {results.length > 0 && (
-        <ul className="absolute z-10 bg-white border rounded mt-1 w-full max-h-64 overflow-y-auto shadow-md">
-          {results.map((card) => (
-            <li key={card.externalId}>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectCard(card);
-                  setQuery("");
-                  setResults([]);
-                }}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-50 text-left"
-              >
-                {card.imageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={card.imageUrl} alt={card.name} className="w-8 h-auto" />
-                )}
-                <span>{card.name}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="grid grid-cols-3 gap-2">
+        {results.map((card) => (
+          <button
+            key={card.externalId}
+            type="button"
+            onClick={() => onSelectCard(card)}
+            className="border rounded overflow-hidden hover:opacity-80 transition text-left"
+          >
+            {card.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={card.imageUrl} alt={card.name} className="w-full h-auto" />
+            ) : (
+              <div className="p-2 text-xs">{card.name}</div>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
