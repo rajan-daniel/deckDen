@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch, ApiError } from "@/lib/api";
+import { ProtectedRoute } from "@/app/components/protected-route";
+
+const SLUG_TO_GAME: Record<string, string> = {
+  yugioh: "Yu-Gi-Oh!",
+  pokemon: "Pokemon",
+  "union-arena": "Union Arena",
+};
+
+function NewDeckForm() {
+  const params = useParams();
+  const slug = params.game as string;
+  const gameName = SLUG_TO_GAME[slug];
+
+  const { token } = useAuth();
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Invalid slug (someone typed a bad URL directly) — bail out early
+  if (!gameName) {
+    return (
+      <div className="text-center mt-16 text-red-600">
+        Unknown game. Go back and pick again.
+      </div>
+    );
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const deck = await apiFetch<{ id: number }>("/decks", {
+        method: "POST",
+        token,
+        body: { name, game: gameName, description, is_public: isPublic },
+      });
+      router.push(`/decks/${deck.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="max-w-md mx-auto mt-16 px-4">
+      <h1 className="text-2xl font-semibold mb-1">New {gameName} deck</h1>
+      <p className="text-gray-500 text-sm mb-6">Fill in the details to get started.</p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <input
+          type="text"
+          placeholder="Deck name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="border rounded px-3 py-2"
+        />
+
+        <textarea
+          placeholder="Description (optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="border rounded px-3 py-2"
+          rows={3}
+        />
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+          />
+          Make this deck public
+        </label>
+
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
+        >
+          {isSubmitting ? "Creating..." : "Create deck"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function NewDeckFormPage() {
+  return (
+    <ProtectedRoute>
+      <NewDeckForm />
+    </ProtectedRoute>
+  );
+}

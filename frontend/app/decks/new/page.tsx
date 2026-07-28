@@ -1,101 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
-import { apiFetch, ApiError } from "@/lib/api";
+import Link from "next/link";
 import { ProtectedRoute } from "@/app/components/protected-route";
 
-type Game = "Union Arena" | "Yu-Gi-Oh!" | "Pokemon";
+const GAMES = [
+  { name: "Yu-Gi-Oh!", slug: "yugioh", color: "bg-purple-600" },
+  { name: "Pokemon", slug: "pokemon", color: "bg-yellow-500" },
+  { name: "Union Arena", slug: "union-arena", color: "bg-blue-600" },
+];
 
-function NewDeckForm() {
-  const { token } = useAuth();
-  const router = useRouter();
-
-  const [name, setName] = useState("");
-  const [game, setGame] = useState<Game>("Yu-Gi-Oh!");
-  const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    try {
-      const deck = await apiFetch<{ id: number }>("/decks", {
-        method: "POST",
-        token,
-        body: { name, game, description, is_public: isPublic },
-      });
-      router.push(`/decks/${deck.id}`);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
+function GamePicker() {
   return (
-    <div className="max-w-md mx-auto mt-16 px-4">
-      <h1 className="text-2xl font-semibold mb-6">Create a deck</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Deck name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
+    <div className="max-w-2xl mx-auto mt-16 px-4">
+      <h1 className="text-2xl font-semibold mb-2">Create a deck</h1>
+      <p className="text-gray-500 text-sm mb-8">Which game is this deck for?</p>
 
-        <select
-          value={game}
-          onChange={(e) => setGame(e.target.value as Game)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
-          <option value="Pokemon">Pokemon</option>
-          <option value="Union Arena">Union Arena</option>
-        </select>
-
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="border rounded px-3 py-2"
-          rows={3}
-        />
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
-          />
-          Make this deck public
-        </label>
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
-        >
-          {isSubmitting ? "Creating..." : "Create deck"}
-        </button>
-      </form>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {GAMES.map((game) => (
+          <Link
+            key={game.slug}
+            href={`/decks/new/${game.slug}`}
+            className={`${game.color} text-white rounded-lg px-6 py-10 text-center font-medium hover:opacity-90 transition`}
+          >
+            {game.name}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default function NewDeckPage() {
+export default function NewDeckGamePickerPage() {
   return (
     <ProtectedRoute>
-      <NewDeckForm />
+      <GamePicker />
     </ProtectedRoute>
   );
 }

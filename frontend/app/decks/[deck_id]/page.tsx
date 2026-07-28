@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
+import { CardSearch } from "@/app/components/card-search";
 
 type DeckCard = {
   id: number;
@@ -37,11 +38,7 @@ export default function DeckDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Add-card form state
-  const [cardName, setCardName] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [category, setCategory] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
 
   // Edit-card state
   const [cardActionError, setCardActionError] = useState<string | null>(null);
@@ -66,30 +63,26 @@ export default function DeckDetailPage() {
     loadDeck();
   }, [deckId, token]);
 
-  async function handleAddCard(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSelectCard(card: {
+    name: string;
+    externalId: string;
+    imageUrl: string;
+  }) {
     setAddError(null);
-    setIsAdding(true);
-
     try {
       await apiFetch(`/decks/${deckId}/cards`, {
         method: "POST",
         token,
         body: {
-          card_name: cardName,
-          quantity,
-          category: category || null,
+          card_name: card.name,
+          external_card_id: card.externalId,
+          image_url: card.imageUrl,
+          quantity: 1,
         },
       });
-      // Clear the form and refresh the deck to show the new card
-      setCardName("");
-      setQuantity(1);
-      setCategory("");
       await loadDeck();
     } catch (err) {
       setAddError(err instanceof ApiError ? err.message : "Failed to add card");
-    } finally {
-      setIsAdding(false);
     }
   }
 
@@ -194,46 +187,13 @@ export default function DeckDetailPage() {
 
       {isOwner && (
         <>
-          <form
-            onSubmit={handleAddCard}
-            className="flex flex-col gap-3 border-t pt-6 mt-6"
-          >
-            <h3 className="text-sm font-medium">Add a card</h3>
-            <input
-              type="text"
-              placeholder="Card name"
-              value={cardName}
-              onChange={(e) => setCardName(e.target.value)}
-              required
-              className="border rounded px-3 py-2 text-sm"
-            />
-            <div className="flex gap-3">
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                required
-                className="border rounded px-3 py-2 text-sm w-24"
-              />
-              <input
-                type="text"
-                placeholder="Category (optional)"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="border rounded px-3 py-2 text-sm flex-1"
-              />
-            </div>
-            {addError && <p className="text-red-600 text-sm">{addError}</p>}
-            <button
-              type="submit"
-              disabled={isAdding}
-              className="bg-black text-white rounded px-3 py-2 text-sm disabled:opacity-50 self-start"
-            >
-              {isAdding ? "Adding..." : "Add card"}
-            </button>
-          </form>
+          <div className="border-t pt-6 mt-6">
+            <h3 className="text-sm font-medium mb-3">Add a card</h3>
+            <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
+            {addError && (
+              <p className="text-red-600 text-sm mt-2">{addError}</p>
+            )}
+          </div>
           <Link
             href={`/decks/${deckId}/edit`}
             className="text-sm underline mt-6"
