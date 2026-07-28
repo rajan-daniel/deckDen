@@ -11,8 +11,10 @@ export function Nav() {
       <Link href="/" className="font-semibold text-lg">
         DeckDen
       </Link>
-
       <div className="flex gap-4 items-center">
+        <Link href="/decks" className="text-sm underline">
+          Browse Decks
+        </Link>
         {isLoading ? null : user ? (
           <>
             <Link href="/decks/mine" className="text-sm underline">
