@@ -6,11 +6,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
-import { CardSearch } from "@/app/components/card-search";
+import { CardSearch, DeckSection } from "@/app/components/card-search";
+import { GAME_ACCENT } from "@/lib/games";
+import { Loading } from "@/app/components/loading";
+import { EmptyState, CardStackIcon } from "@/app/components/empty-state";
+
+const EXTRA_DECK_CATEGORY = "Extra Deck";
+const MAIN_DECK_CATEGORY = "Main Deck";
 
 type DeckCard = {
   id: number;
   card_name: string;
+  external_card_id: string | null;
   quantity: number;
   category: string | null;
   image_url: string | null;
@@ -60,23 +67,46 @@ export default function DeckDetailPage() {
     loadDeck();
   }, [deckId, token]);
 
-  async function handleSelectCard(card: {
-    name: string;
-    externalId: string;
-    imageUrl: string;
-  }) {
+  const isYugioh = deck?.game === "Yu-Gi-Oh!";
+
+  async function handleSelectCard(
+    card: { name: string; externalId: string; imageUrl: string },
+    section?: DeckSection,
+  ) {
     setAddError(null);
+
+    const category = isYugioh
+      ? section === "extra"
+        ? EXTRA_DECK_CATEGORY
+        : MAIN_DECK_CATEGORY
+      : null;
+
+    const existing = deck?.cards.find((c) =>
+      (card.externalId
+        ? c.external_card_id === card.externalId
+        : c.card_name === card.name) && c.category === category,
+    );
+
     try {
-      await apiFetch(`/decks/${deckId}/cards`, {
-        method: "POST",
-        token,
-        body: {
-          card_name: card.name,
-          external_card_id: card.externalId,
-          image_url: card.imageUrl,
-          quantity: 1,
-        },
-      });
+      if (existing) {
+        await apiFetch(`/decks/${deckId}/cards/${existing.id}`, {
+          method: "PUT",
+          token,
+          body: { quantity: existing.quantity + 1 },
+        });
+      } else {
+        await apiFetch(`/decks/${deckId}/cards`, {
+          method: "POST",
+          token,
+          body: {
+            card_name: card.name,
+            external_card_id: card.externalId,
+            image_url: card.imageUrl,
+            quantity: 1,
+            category,
+          },
+        });
+      }
       await loadDeck();
     } catch (err) {
       setAddError(err instanceof ApiError ? err.message : "Failed to add card");
@@ -106,12 +136,12 @@ export default function DeckDetailPage() {
   }
 
   if (isLoading) {
-    return <div className="text-center mt-16 text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   if (error || !deck) {
     return (
-      <div className="text-center mt-16 text-red-600">
+      <div className="text-center mt-16 text-red-400">
         {error ?? "Deck not found"}
       </div>
     );
@@ -130,88 +160,160 @@ export default function DeckDetailPage() {
     }
   }
 
+  const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
+  const accent = GAME_ACCENT[deck.game] ?? "bg-gradient-to-r from-sky-500 to-purple-600";
+
+  function renderCardTile(card: DeckCard) {
+    return (
+      <div key={card.id} className="grid-card group">
+        <div className="grid-card-frame">
+          {card.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={card.image_url} alt={card.card_name} className="grid-card-img" />
+          ) : (
+            <div className="p-2 text-xs min-h-24 flex items-center text-neutral-300">
+              {card.card_name}
+            </div>
+          )}
+          {isOwner && (
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          )}
+        </div>
+
+        {card.quantity > 1 && <span className="qty-badge">×{card.quantity}</span>}
+
+        {isOwner && (
+          <button
+            onClick={() => handleRemoveOneCopy(card)}
+            aria-label={`Remove one copy of ${card.card_name}`}
+            className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 text-red-600 shadow-md opacity-0 scale-90 transition-all duration-200 hover:bg-red-600 hover:text-white group-hover:opacity-100 group-hover:scale-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-3.5 w-3.5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4.22 4.22a.75.75 0 011.06 0L10 8.94l4.72-4.72a.75.75 0 111.06 1.06L11.06 10l4.72 4.72a.75.75 0 11-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 01-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 010-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function renderSection(title: string, cards: DeckCard[], size: "default" | "sm") {
+    const count = cards.reduce((sum, c) => sum + c.quantity, 0);
+    const hasCards = cards.length > 0;
+    const bodyClass = size === "sm" ? "tray-body-sm" : "tray-body";
+    return (
+      <div>
+        <h3 className="text-sm font-medium text-neutral-400 mb-2">
+          {title} <span className="text-neutral-500 font-normal">({count})</span>
+        </h3>
+        <div className="tray">
+          <div
+            className={
+              hasCards
+                ? `${bodyClass} grid grid-cols-4 gap-3 items-start content-start`
+                : `${bodyClass} flex items-center justify-center`
+            }
+          >
+            {hasCards ? (
+              cards.map(renderCardTile)
+            ) : (
+              <EmptyState title={`No ${title.toLowerCase()} cards yet.`} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const mainDeckCards = deck.cards.filter((c) => c.category !== EXTRA_DECK_CATEGORY);
+  const extraDeckCards = deck.cards.filter((c) => c.category === EXTRA_DECK_CATEGORY);
+
   return (
-    <div className="max-w-5xl mx-auto mt-16 px-4">
-      <div className="flex justify-between items-start mb-2">
-        <h1 className="text-2xl font-semibold">{deck.name}</h1>
-        {!deck.is_public && (
-          <span className="text-xs border rounded px-2 py-1">Private</span>
+    <div className="w-full max-w-7xl mx-auto mt-12 px-4 pb-16">
+      <div className="card-surface relative overflow-hidden p-6 mb-8">
+        <span className={`absolute top-0 left-0 right-0 h-1.5 ${accent}`} />
+
+        <div className="flex justify-between items-start gap-4">
+          <h1 className="text-2xl font-semibold">{deck.name}</h1>
+          {!deck.is_public && <span className="badge shrink-0">Private</span>}
+        </div>
+
+        <div className="flex items-center gap-2 mt-2">
+          <span className="badge-accent">{deck.game}</span>
+          {deck.format && <span className="badge">{deck.format}</span>}
+        </div>
+
+        {deck.description && (
+          <p className="text-neutral-300 mt-4">{deck.description}</p>
         )}
       </div>
 
-      <p className="text-sm text-gray-500 mb-1">
-        {deck.game}
-        {deck.format && ` · ${deck.format}`}
-      </p>
-
-      {deck.description && (
-        <p className="text-gray-700 mt-4">{deck.description}</p>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* LEFT: search + results grid (owner only) */}
         {isOwner && (
           <div>
             <h2 className="text-lg font-medium mb-3">Add cards</h2>
             <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
-            {addError && <p className="text-red-600 text-sm mt-2">{addError}</p>}
+            {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
           </div>
         )}
 
         {/* RIGHT: current deck as an image grid */}
         <div>
           <h2 className="text-lg font-medium mb-3">
-            Deck ({deck.cards.reduce((sum, c) => sum + c.quantity, 0)})
+            Deck{" "}
+            <span className="text-neutral-400 font-normal">({cardCount})</span>
           </h2>
+          {/* Matches the search bar's footprint on the left so both trays start at the same y-position */}
+          {isOwner && <div className="search-row" aria-hidden="true" />}
 
-          {deck.cards.length === 0 ? (
-            <p className="text-gray-500 text-sm">No cards added yet.</p>
+          {isYugioh ? (
+            <div className="flex flex-col gap-6">
+              {renderSection("Main Deck", mainDeckCards, "default")}
+              {renderSection("Extra Deck", extraDeckCards, "sm")}
+            </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {deck.cards.flatMap((card) =>
-                Array.from({ length: card.quantity }).map((_, i) => (
-                  <div key={`${card.id}-${i}`} className="relative group">
-                    {card.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={card.image_url}
-                        alt={card.card_name}
-                        className="w-full h-auto rounded border"
-                      />
-                    ) : (
-                      <div className="border rounded p-2 text-xs">
-                        {card.card_name}
-                      </div>
-                    )}
-                    {isOwner && (
-                      <button
-                        onClick={() => handleRemoveOneCopy(card)}
-                        className="absolute inset-0 bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                )),
-              )}
+            <div className="tray">
+              <div
+                className={
+                  deck.cards.length === 0
+                    ? "tray-body flex items-center justify-center"
+                    : "tray-body grid grid-cols-4 gap-3 items-start content-start"
+                }
+              >
+                {deck.cards.length === 0 ? (
+                  <EmptyState
+                    title="No cards added yet."
+                    icon={<CardStackIcon className="h-7 w-7 text-neutral-600" />}
+                  />
+                ) : (
+                  deck.cards.map(renderCardTile)
+                )}
+              </div>
             </div>
           )}
 
           {cardActionError && (
-            <p className="text-red-600 text-sm mt-2">{cardActionError}</p>
+            <p className="text-red-400 text-sm mt-2">{cardActionError}</p>
           )}
         </div>
       </div>
 
       {isOwner && (
-        <div className="flex gap-4 mt-8 border-t pt-6">
-          <Link href={`/decks/${deckId}/edit`} className="text-sm underline">
+        <div className="flex gap-3 mt-8 border-t border-neutral-800 pt-6">
+          <Link href={`/decks/${deckId}/edit`} className="btn-secondary py-2 px-4">
             Edit deck
           </Link>
-          <button
-            onClick={handleDelete}
-            className="text-sm text-red-600 underline"
-          >
+          <button onClick={handleDelete} className="btn-danger">
             Delete deck
           </button>
         </div>

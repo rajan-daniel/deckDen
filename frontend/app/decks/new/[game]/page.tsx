@@ -24,7 +24,7 @@ function NewDeckForm() {
   // Invalid slug (someone typed a bad URL directly) — bail out early
   if (!gameName) {
     return (
-      <div className="text-center mt-16 text-red-600">
+      <div className="text-center mt-16 text-red-400">
         Unknown game. Go back and pick again.
       </div>
     );
@@ -50,47 +50,52 @@ function NewDeckForm() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-16 px-4">
-      <h1 className="text-2xl font-semibold mb-1">New {gameName} deck</h1>
-      <p className="text-gray-500 text-sm mb-6">Fill in the details to get started.</p>
+    <div className="flex-1 flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-md card-surface p-8">
+        <h1 className="text-2xl font-semibold mb-1">New {gameName} deck</h1>
+        <p className="text-neutral-400 text-sm mb-6">
+          Fill in the details to get started.
+        </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Deck name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
-
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="border rounded px-3 py-2"
-          rows={3}
-        />
-
-        <label className="flex items-center gap-2 text-sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
+            type="text"
+            placeholder="Deck name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="input-field"
           />
-          Make this deck public
-        </label>
 
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+          <textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="input-field"
+            rows={3}
+          />
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
-        >
-          {isSubmitting ? "Creating..." : "Create deck"}
-        </button>
-      </form>
+          <label className="flex items-center gap-2 text-sm text-neutral-300">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="h-4 w-4 rounded border-neutral-600 bg-neutral-900 text-sky-500 focus:ring-sky-400"
+            />
+            Make this deck public
+          </label>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary py-2.5 mt-1"
+          >
+            {isSubmitting ? "Creating..." : "Create deck"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

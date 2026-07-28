@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { Loading } from "@/app/components/loading";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -15,7 +16,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, router]);
 
   if (isLoading) {
-    return <div className="text-center mt-16 text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   if (!user) {

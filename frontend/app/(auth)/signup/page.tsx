@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
@@ -35,42 +36,53 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-16 px-4">
-      <h1 className="text-2xl font-semibold mb-6">Create an account</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
-        >
-          {isSubmitting ? "Creating account..." : "Sign up"}
-        </button>
-      </form>
+    <div className="flex-1 flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-sm card-surface p-8">
+        <h1 className="text-2xl font-semibold mb-1">Create an account</h1>
+        <p className="text-sm text-neutral-400 mb-6">
+          Start building decks in seconds.
+        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="input-field"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="input-field"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="input-field"
+          />
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary py-2.5 mt-1"
+          >
+            {isSubmitting ? "Creating account..." : "Sign up"}
+          </button>
+        </form>
+        <p className="text-sm text-neutral-400 mt-6 text-center">
+          Already have an account?{" "}
+          <Link href="/login" className="text-sky-400 font-medium hover:underline">
+            Log in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

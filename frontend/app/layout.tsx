@@ -29,11 +29,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-100 relative">
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+        >
+          <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-sky-500/15 blur-3xl" />
+          <div className="absolute top-1/3 -right-32 h-96 w-96 rounded-full bg-purple-500/15 blur-3xl" />
+        </div>
         <AuthProvider>
           <Nav />
-          {children}
-          </AuthProvider>
+          <main className="flex-1 flex flex-col">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

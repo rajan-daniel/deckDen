@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
+import { Loading } from "@/app/components/loading";
 
 type Game = "Union Arena" | "Yu-Gi-Oh!" | "Pokemon";
 
@@ -73,11 +74,11 @@ function EditDeckForm() {
   }
 
   if (isLoading) {
-    return <div className="text-center mt-16 text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   if (loadError || !deck) {
-    return <div className="text-center mt-16 text-red-600">{loadError ?? "Deck not found"}</div>;
+    return <div className="text-center mt-16 text-red-400">{loadError ?? "Deck not found"}</div>;
   }
 
   // Not the owner? Bounce them back to the deck's read-only view.
@@ -87,55 +88,58 @@ function EditDeckForm() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-16 px-4">
-      <h1 className="text-2xl font-semibold mb-6">Edit deck</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Deck name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="border rounded px-3 py-2"
-        />
-
-        <select
-          value={game}
-          onChange={(e) => setGame(e.target.value as Game)}
-          className="border rounded px-3 py-2"
-        >
-          <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
-          <option value="Pokemon">Pokemon</option>
-          <option value="Union Arena">Union Arena</option>
-        </select>
-
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="border rounded px-3 py-2"
-          rows={3}
-        />
-
-        <label className="flex items-center gap-2 text-sm">
+    <div className="flex-1 flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-md card-surface p-8">
+        <h1 className="text-2xl font-semibold mb-6">Edit deck</h1>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
-            type="checkbox"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
+            type="text"
+            placeholder="Deck name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="input-field"
           />
-          Make this deck public
-        </label>
 
-        {submitError && <p className="text-red-600 text-sm">{submitError}</p>}
+          <select
+            value={game}
+            onChange={(e) => setGame(e.target.value as Game)}
+            className="input-field"
+          >
+            <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
+            <option value="Pokemon">Pokemon</option>
+            <option value="Union Arena">Union Arena</option>
+          </select>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
-        >
-          {isSubmitting ? "Saving..." : "Save changes"}
-        </button>
-      </form>
+          <textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="input-field"
+            rows={3}
+          />
+
+          <label className="flex items-center gap-2 text-sm text-neutral-300">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="h-4 w-4 rounded border-neutral-600 bg-neutral-900 text-sky-500 focus:ring-sky-400"
+            />
+            Make this deck public
+          </label>
+
+          {submitError && <p className="text-red-400 text-sm">{submitError}</p>}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn-primary py-2.5 mt-1"
+          >
+            {isSubmitting ? "Saving..." : "Save changes"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

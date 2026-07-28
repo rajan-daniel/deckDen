@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api";
-import { SLUG_TO_GAME } from "@/lib/games";
+import { SLUG_TO_GAME, GAME_ACCENT } from "@/lib/games";
+import { Loading } from "@/app/components/loading";
 
 type Deck = {
   id: number;
@@ -43,43 +44,45 @@ export default function BrowseByGamePage() {
 
   if (!gameName) {
     return (
-      <div className="text-center mt-16 text-red-600">
+      <div className="text-center mt-16 text-red-400">
         Unknown game. Go back and pick again.
       </div>
     );
   }
 
   if (isLoading) {
-    return <div className="text-center mt-16 text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-16 px-4">
+    <div className="w-full max-w-5xl mx-auto mt-16 px-4 pb-16">
       <h1 className="text-2xl font-semibold mb-6">{gameName} Decks</h1>
 
       {error ? (
-        <p className="text-red-600 text-sm">{error}</p>
+        <p className="text-red-400 text-sm">{error}</p>
       ) : decks.length === 0 ? (
-        <p className="text-gray-500 text-sm">No public decks yet for this game.</p>
+        <p className="text-neutral-400 text-sm">No public decks yet for this game.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {decks.map((deck) => (
-            <li key={deck.id}>
-              <Link
-                href={`/decks/${deck.id}`}
-                className="flex justify-between items-center border rounded px-4 py-3 hover:bg-gray-50"
-              >
-                <div>
-                  <p className="font-medium">{deck.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {deck.game}
-                    {deck.format && ` · ${deck.format}`}
-                  </p>
-                </div>
-              </Link>
-            </li>
+            <Link
+              key={deck.id}
+              href={`/decks/${deck.id}`}
+              className="card-surface group relative overflow-hidden p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/15 hover:border-sky-500/50"
+            >
+              <span
+                className={`absolute top-0 left-0 right-0 h-1.5 ${GAME_ACCENT[deck.game] ?? "bg-gradient-to-r from-sky-500 to-purple-600"}`}
+              />
+              <p className="font-medium text-neutral-100 group-hover:text-sky-400 transition-colors">
+                {deck.name}
+              </p>
+              <p className="text-sm text-neutral-400 mt-1">
+                {deck.game}
+                {deck.format && ` · ${deck.format}`}
+              </p>
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

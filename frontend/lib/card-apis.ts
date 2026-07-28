@@ -10,7 +10,7 @@ async function searchYuGiOh(query: string): Promise<NormalizedCard[]> {
   );
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.data ?? []).slice(0, 8).map((card: any) => ({
+  return (data.data ?? []).slice(0, 50).map((card: any) => ({
     name: card.name,
     externalId: String(card.id),
     imageUrl: card.card_images?.[0]?.image_url_small ?? "",
@@ -19,7 +19,7 @@ async function searchYuGiOh(query: string): Promise<NormalizedCard[]> {
 
 async function searchPokemon(query: string): Promise<NormalizedCard[]> {
   const res = await fetch(
-    `https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}*&pageSize=8`
+    `https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(query)}*&pageSize=50`
   );
   if (!res.ok) return [];
   const data = await res.json();

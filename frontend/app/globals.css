@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #08090d;
+  --foreground: #f2f4f7;
 }
 
 @theme inline {
@@ -12,15 +12,181 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-sky-400) 40%, var(--color-purple-500) 40%);
+  color: white;
+}
+
+/* Slim, unobtrusive scrollbar that still matches the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-700) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-700);
+  border-radius: 999px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-600);
+}
+
+@layer components {
+  /* Buttons — each variant repeats the shared base utilities because
+     Tailwind v4 @apply cannot chain one custom component class into another. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      bg-gradient-to-r from-sky-500 to-purple-600 text-white px-5 py-2.5
+      shadow-md shadow-purple-500/30
+      hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5
+      active:translate-y-0 active:shadow-md;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      bg-neutral-900 border border-neutral-700 text-neutral-200 px-5 py-2.5
+      hover:border-sky-500/60 hover:text-sky-300 hover:bg-neutral-800 hover:-translate-y-0.5
+      active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      text-neutral-400 px-4 py-2 hover:text-neutral-100 hover:bg-neutral-800/70;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+      transition-all duration-200 ease-out
+      disabled:opacity-50 disabled:pointer-events-none
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      text-red-400 px-4 py-2 hover:bg-red-500/10 hover:text-red-300;
+  }
+
+  /* Inputs */
+  .input-field {
+    @apply w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-sm text-neutral-100
+      placeholder:text-neutral-500 shadow-sm shadow-black/20
+      transition duration-150
+      focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400;
+  }
+
+  /* Fixed-height row reserved for the search bar above the "Add cards" tray.
+     Used a second time as an empty spacer above the "Deck" tray so both trays
+     start at the exact same y-position even though only one column has a
+     search bar under its heading. */
+  .search-row {
+    @apply relative mb-3 h-[42px];
+  }
+
+  /* Surfaces */
+  .card-surface {
+    @apply bg-neutral-900 rounded-2xl border border-neutral-800 shadow-sm shadow-black/30;
+  }
+
+  /* Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-sky-400 to-purple-500 bg-clip-text text-transparent;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800/80
+      px-2.5 py-1 text-xs font-medium text-neutral-300;
+  }
+  .badge-accent {
+    @apply inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-sky-500/15 to-purple-500/15
+      border border-sky-500/30 px-2.5 py-1 text-xs font-medium text-sky-300;
+  }
+
+  /* Hoverable grid cards (deck results, search results).
+     A "matted frame" design: the outer tile has its own rounded corners and a
+     small padding gutter, and the image sits in its own inner rounded frame.
+     This keeps the outer border loose/soft instead of hugging the art exactly,
+     and stops the hover zoom from clipping straight through the art's corners.
+     Note: consumers must also add the literal "group" class alongside
+     this one — Tailwind v4's @apply can't pull in the bare group marker. */
+  .grid-card {
+    @apply relative rounded-2xl border border-neutral-800 bg-neutral-900 p-1.5
+      shadow-sm shadow-black/30 transition-all duration-300 ease-out
+      hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-sky-500/60;
+  }
+  .grid-card-frame {
+    @apply relative overflow-hidden rounded-lg bg-neutral-950;
+  }
+  .grid-card-img {
+    @apply w-full h-auto object-cover transition-transform duration-300 ease-out
+      group-hover:scale-[1.04];
+  }
+
+  /* Fixed "tray" surface — a permanent recessed slot that cards sit on top of.
+     Both the search-results panel and the deck's card grid(s) render inside a
+     .tray: the background/border/shadow never change based on content, only
+     the .tray-body's contents do (a card grid, or a centered empty message).
+     The body height is FIXED (not min/max) on purpose — adding, searching, or
+     removing cards must only change what's inside the tray, never its size or
+     the surrounding page layout. */
+  .tray {
+    @apply relative rounded-2xl border border-neutral-800/80 bg-black/20
+      shadow-inner shadow-black/60 p-3;
+  }
+  .tray-body {
+    @apply h-[32rem] overflow-y-auto pr-1;
+  }
+  .tray-body-sm {
+    @apply h-[14rem] overflow-y-auto pr-1;
+  }
+
+  /* Quantity pill for stacked duplicate cards in a grid-card */
+  .qty-badge {
+    @apply absolute top-1 left-1 z-10 rounded-full bg-gradient-to-r from-sky-500 to-purple-600
+      px-2 py-0.5 text-[11px] font-semibold text-white shadow-md shadow-black/40;
+  }
+
+  /* "Add to Main/Extra deck" pills on Yu-Gi-Oh! search results — same pill
+     shape/weight/shadow language as .qty-badge, just recolored per target. */
+  .pill-btn-main {
+    @apply rounded-full px-2.5 py-1 text-[11px] font-semibold text-white
+      shadow-md shadow-black/40 transition-all duration-150
+      bg-gradient-to-r from-sky-500 to-sky-600
+      hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/40;
+  }
+  .pill-btn-extra {
+    @apply rounded-full px-2.5 py-1 text-[11px] font-semibold text-white
+      shadow-md shadow-black/40 transition-all duration-150
+      bg-gradient-to-r from-purple-500 to-purple-600
+      hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/40;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
 }
