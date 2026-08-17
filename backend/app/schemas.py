@@ -39,6 +39,11 @@ class DeckResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class DeckSummaryResponse(DeckResponse):
+    owner_username: str
+    preview_image_url: str | None = None
+    card_count: int = 0
+
 class DeckUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     game: Literal["Union Arena", "Yu-Gi-Oh!", "Pokemon"] | None = None

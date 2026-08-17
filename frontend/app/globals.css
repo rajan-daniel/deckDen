@@ -175,6 +175,52 @@ body {
       bg-gradient-to-r from-purple-500 to-purple-600
       hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/40;
   }
+
+  /* Poster-style deck tile for deck-listing pages (Browse Decks, etc).
+     Full-bleed card art on top with floating chips, name + owner below —
+     distinct from .grid-card, which is sized for a dense grid of individual
+     trading cards rather than one hero image per deck.
+     Note: consumers must also add the literal "group" class alongside this
+     one — Tailwind v4's @apply can't pull in the bare group marker. */
+  .deck-card {
+    @apply relative flex flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900
+      shadow-sm shadow-black/30 transition-all duration-300 ease-out
+      hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-sky-500/60;
+  }
+  .deck-card-art {
+    @apply relative aspect-[3/4] w-full overflow-hidden bg-neutral-950;
+  }
+  .deck-card-art-img {
+    @apply h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105;
+  }
+  .deck-card-scrim {
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 to-transparent;
+  }
+  .deck-card-chip {
+    @apply absolute z-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10
+      px-2 py-0.5 text-[11px] font-medium text-neutral-100 shadow-sm;
+  }
+  .deck-card-body {
+    @apply flex flex-1 flex-col gap-3 p-4;
+  }
+  .deck-card-owner {
+    @apply mt-auto flex items-center gap-2 pt-3 border-t border-neutral-800/70;
+  }
+  .deck-avatar {
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-purple-600
+      text-[11px] font-semibold text-white;
+  }
+
+  /* Zoom/focus trigger shown on a grid-card's hover overlay — enlarges the
+     card so its text is readable. Sits bottom-right so it never collides
+     with the top-left qty-badge or top-right remove button. */
+  .zoom-btn {
+    @apply absolute bottom-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full
+      bg-white/95 text-neutral-700 shadow-md opacity-0 scale-90
+      transition-all duration-200
+      hover:bg-sky-500 hover:text-white
+      group-hover:opacity-100 group-hover:scale-100;
+  }
 }
 
 @keyframes fade-in-up {

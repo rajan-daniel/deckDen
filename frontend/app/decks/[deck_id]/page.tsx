@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -9,7 +9,8 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { CardSearch, DeckSection } from "@/app/components/card-search";
 import { GAME_ACCENT } from "@/lib/games";
 import { Loading } from "@/app/components/loading";
-import { EmptyState, CardStackIcon } from "@/app/components/empty-state";
+import { EmptyState, CardStackIcon, ZoomIcon } from "@/app/components/empty-state";
+import { CardFocusModal, FocusedCard } from "@/app/components/card-focus-modal";
 
 const EXTRA_DECK_CATEGORY = "Extra Deck";
 const MAIN_DECK_CATEGORY = "Main Deck";
@@ -46,20 +47,31 @@ export default function DeckDetailPage() {
 
   const [addError, setAddError] = useState<string | null>(null);
   const [cardActionError, setCardActionError] = useState<string | null>(null);
+  const [focusedCard, setFocusedCard] = useState<FocusedCard | null>(null);
+
+  // Auth token resolves asynchronously from localStorage on mount, so this
+  // can fire once with token=null (401 -> falls back to the public route,
+  // which 404s for a private deck) and again once the token lands. Track
+  // which call is newest so a slower, stale attempt can't overwrite a
+  // faster, correct one's state after the fact.
+  const requestIdRef = useRef(0);
 
   async function loadDeck() {
+    const requestId = ++requestIdRef.current;
     try {
       const data = await apiFetch<Deck>(`/me/decks/${deckId}`, { token });
-      setDeck(data);
+      if (requestIdRef.current === requestId) setDeck(data);
     } catch (err) {
       try {
         const data = await apiFetch<Deck>(`/decks/${deckId}`);
-        setDeck(data);
+        if (requestIdRef.current === requestId) setDeck(data);
       } catch (err2) {
-        setError(err2 instanceof ApiError ? err2.message : "Deck not found");
+        if (requestIdRef.current === requestId) {
+          setError(err2 instanceof ApiError ? err2.message : "Deck not found");
+        }
       }
     } finally {
-      setIsLoading(false);
+      if (requestIdRef.current === requestId) setIsLoading(false);
     }
   }
 
@@ -162,6 +174,7 @@ export default function DeckDetailPage() {
 
   const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
   const accent = GAME_ACCENT[deck.game] ?? "bg-gradient-to-r from-sky-500 to-purple-600";
+  const currentGame = deck.game;
 
   function renderCardTile(card: DeckCard) {
     return (
@@ -178,6 +191,16 @@ export default function DeckDetailPage() {
           {isOwner && (
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           )}
+          <button
+            type="button"
+            onClick={() =>
+              setFocusedCard({ name: card.card_name, imageUrl: card.image_url, game: currentGame })
+            }
+            aria-label={`Enlarge ${card.card_name}`}
+            className="zoom-btn"
+          >
+            <ZoomIcon className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         {card.quantity > 1 && <span className="qty-badge">×{card.quantity}</span>}
@@ -318,6 +341,8 @@ export default function DeckDetailPage() {
           </button>
         </div>
       )}
+
+      <CardFocusModal card={focusedCard} onClose={() => setFocusedCard(null)} />
     </div>
   );
 }

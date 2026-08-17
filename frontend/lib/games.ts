@@ -26,3 +26,7 @@ export const SLUG_TO_GAME: Record<string, string> = Object.fromEntries(
 export const GAME_ACCENT: Record<string, string> = Object.fromEntries(
   GAMES.map((g) => [g.name, g.color])
 );
+
+export const GAME_LOGO: Record<string, string> = Object.fromEntries(
+  GAMES.map((g) => [g.name, g.logo])
+);

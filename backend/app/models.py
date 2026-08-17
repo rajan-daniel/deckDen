@@ -29,6 +29,7 @@ class Deck(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     cards = relationship("DeckCard", back_populates="deck", cascade="all, delete-orphan")
+    owner = relationship("User")
 
 class DeckCard(Base):
     __tablename__ = "deck_cards"

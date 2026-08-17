@@ -5,26 +5,19 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
-import { GAME_ACCENT } from "@/lib/games";
 import { Loading } from "@/app/components/loading";
-
-type Deck = {
-  id: number;
-  name: string;
-  game: string;
-  is_public: boolean;
-};
+import { DeckCard, DeckSummary } from "@/app/components/deck-card";
 
 function MyDecksList() {
   const { token } = useAuth();
-  const [decks, setDecks] = useState<Deck[]>([]);
+  const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadDecks() {
       try {
-        const data = await apiFetch<Deck[]>("/me/decks", { token });
+        const data = await apiFetch<DeckSummary[]>("/me/decks", { token });
         setDecks(data);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Failed to load decks");
@@ -62,26 +55,9 @@ function MyDecksList() {
           .
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
           {decks.map((deck) => (
-            <Link
-              key={deck.id}
-              href={`/decks/${deck.id}`}
-              className="card-surface group relative overflow-hidden p-5 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-500/15 hover:border-sky-500/50"
-            >
-              <span
-                className={`absolute top-0 left-0 right-0 h-1.5 ${GAME_ACCENT[deck.game] ?? "bg-gradient-to-r from-sky-500 to-purple-600"}`}
-              />
-              <div className="flex justify-between items-start gap-2">
-                <p className="font-medium text-neutral-100 group-hover:text-sky-400 transition-colors">
-                  {deck.name}
-                </p>
-                {!deck.is_public && (
-                  <span className="badge shrink-0">Private</span>
-                )}
-              </div>
-              <p className="text-sm text-neutral-400 mt-1">{deck.game}</p>
-            </Link>
+            <DeckCard key={deck.id} deck={deck} />
           ))}
         </div>
       )}

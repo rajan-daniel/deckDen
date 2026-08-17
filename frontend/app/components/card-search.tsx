@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getCardSearchFn, NormalizedCard } from "@/lib/card-apis";
-import { EmptyState, SearchIcon } from "@/app/components/empty-state";
+import { EmptyState, SearchIcon, ZoomIcon } from "@/app/components/empty-state";
+import { CardFocusModal, FocusedCard } from "@/app/components/card-focus-modal";
 
 export type DeckSection = "main" | "extra";
 
@@ -15,6 +16,8 @@ export function CardSearch({ game, onSelectCard }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NormalizedCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [focusedCard, setFocusedCard] = useState<FocusedCard | null>(null);
 
   const isYugioh = game === "Yu-Gi-Oh!";
   const hasResults = results.length > 0;
@@ -22,16 +25,24 @@ export function CardSearch({ game, onSelectCard }: Props) {
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
+      setSearchFailed(false);
       return;
     }
 
     setIsSearching(true);
+    setSearchFailed(false);
     const searchFn = getCardSearchFn(game);
 
     const timer = setTimeout(async () => {
-      const found = await searchFn(query);
-      setResults(found);
-      setIsSearching(false);
+      try {
+        const found = await searchFn(query);
+        setResults(found);
+      } catch {
+        setResults([]);
+        setSearchFailed(true);
+      } finally {
+        setIsSearching(false);
+      }
     }, 400);
 
     return () => clearTimeout(timer);
@@ -66,6 +77,11 @@ export function CardSearch({ game, onSelectCard }: Props) {
           ) : isSearching ? (
             <EmptyState
               title="Searching..."
+              icon={<SearchIcon className="h-7 w-7 text-neutral-600" />}
+            />
+          ) : searchFailed ? (
+            <EmptyState
+              title="Couldn't reach the card database. Check your connection and try again."
               icon={<SearchIcon className="h-7 w-7 text-neutral-600" />}
             />
           ) : !hasResults ? (
@@ -103,14 +119,29 @@ export function CardSearch({ game, onSelectCard }: Props) {
                         + Extra
                       </button>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setFocusedCard({ name: card.name, imageUrl: card.imageUrl ?? null, game })}
+                      aria-label={`Enlarge ${card.name}`}
+                      className="zoom-btn !bottom-auto !top-1.5"
+                    >
+                      <ZoomIcon className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               ) : (
-                <button
+                <div
                   key={card.externalId}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onSelectCard(card)}
-                  className="grid-card group text-left"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectCard(card);
+                    }
+                  }}
+                  className="grid-card group text-left cursor-pointer"
                 >
                   <div className="grid-card-frame">
                     {card.imageUrl ? (
@@ -133,13 +164,25 @@ export function CardSearch({ game, onSelectCard }: Props) {
                         </svg>
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFocusedCard({ name: card.name, imageUrl: card.imageUrl ?? null, game });
+                      }}
+                      aria-label={`Enlarge ${card.name}`}
+                      className="zoom-btn"
+                    >
+                      <ZoomIcon className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                </button>
+                </div>
               ),
             )
           )}
         </div>
       </div>
+      <CardFocusModal card={focusedCard} onClose={() => setFocusedCard(null)} />
     </div>
   );
 }

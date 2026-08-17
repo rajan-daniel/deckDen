@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
 from app.database import get_db, engine, Base
 from app import models, schemas
@@ -114,12 +114,23 @@ def create_deck(
 
     return new_deck
 
-@app.get("/me/decks", response_model=list[schemas.DeckResponse])
+def _deck_summary(deck: models.Deck) -> models.Deck:
+    """Attach the fields DeckSummaryResponse needs that aren't plain columns."""
+    deck.owner_username = deck.owner.username
+    first_card = min(deck.cards, key=lambda c: c.id, default=None)
+    deck.preview_image_url = first_card.image_url if first_card else None
+    deck.card_count = sum(c.quantity for c in deck.cards)
+    return deck
+
+@app.get("/me/decks", response_model=list[schemas.DeckSummaryResponse])
 def get_my_decks(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    return db.query(models.Deck).filter(models.Deck.owner_id == current_user.id).all()
+    decks = db.query(models.Deck).options(
+        joinedload(models.Deck.owner), selectinload(models.Deck.cards)
+    ).filter(models.Deck.owner_id == current_user.id).all()
+    return [_deck_summary(deck) for deck in decks]
 
 @app.get("/me/decks/{deck_id}", response_model=schemas.DeckWithCardsResponse)
 def get_my_deck(
@@ -139,17 +150,19 @@ def get_my_deck(
 # DECK ENDPOINTS
 
 # Public Browse Decks that are Public with no Auth #
-@app.get("/decks", response_model=list[schemas.DeckResponse])
+@app.get("/decks", response_model=list[schemas.DeckSummaryResponse])
 def get_public_decks(
     game: str | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Deck).filter(models.Deck.is_public.is_(True))
+    query = db.query(models.Deck).options(
+        joinedload(models.Deck.owner), selectinload(models.Deck.cards)
+    ).filter(models.Deck.is_public.is_(True))
 
     if game is not None:
         query = query.filter(models.Deck.game == game)
 
-    return query.all()
+    return [_deck_summary(deck) for deck in query.all()]
 
 # Private get deck by deck ID #
 @app.get("/decks/{deck_id}", response_model=schemas.DeckWithCardsResponse)
@@ -315,17 +328,20 @@ def delete_deck_card(
 
 # Card endpoints
 
-@app.get("/users/{username}/decks", response_model=list[schemas.DeckResponse])
+@app.get("/users/{username}/decks", response_model=list[schemas.DeckSummaryResponse])
 def get_user_public_decks(username: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == username).first()
 
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return db.query(models.Deck).filter(
+    decks = db.query(models.Deck).options(
+        joinedload(models.Deck.owner), selectinload(models.Deck.cards)
+    ).filter(
         models.Deck.owner_id == user.id,
         models.Deck.is_public.is_(True),
     ).all()
+    return [_deck_summary(deck) for deck in decks]
 
 @app.get("/users/search", response_model=list[schemas.UserSearchResult])
 def search_users(q: str, db: Session = Depends(get_db)):

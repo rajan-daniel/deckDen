@@ -36,6 +36,22 @@ export function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+export function ZoomIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      className={className}
+    >
+      <circle cx="8.5" cy="8.5" r="5.5" />
+      <path strokeLinecap="round" d="M13 13l4.5 4.5M8.5 6v5M6 8.5h5" />
+    </svg>
+  );
+}
+
 /* Content only — no background/border of its own. Meant to sit centered
    inside a .tray-body so the tray's surface stays constant whether it's
    showing this placeholder or a full grid of cards. */
