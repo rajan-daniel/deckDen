@@ -221,6 +221,37 @@ body {
       hover:bg-sky-500 hover:text-white
       group-hover:opacity-100 group-hover:scale-100;
   }
+
+  /* Site footer */
+  .footer-heading {
+    @apply text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3;
+  }
+  .footer-link {
+    @apply text-sm text-neutral-400 hover:text-sky-400 transition-colors;
+  }
+
+  /* Shared prose styling for the static content pages (About, Contact,
+     Privacy, Terms) — plain semantic markup (h2/h3/p/ul) styled once here
+     so all four read as one uniform "document" instead of each page
+     hand-rolling its own heading/paragraph spacing. */
+  .legal-content h2 {
+    @apply text-lg font-semibold text-neutral-100 mt-10 mb-3 first:mt-0;
+  }
+  .legal-content h3 {
+    @apply text-base font-medium text-neutral-200 mt-6 mb-2;
+  }
+  .legal-content p {
+    @apply mb-4 text-neutral-400 leading-relaxed;
+  }
+  .legal-content ul {
+    @apply list-disc list-outside pl-5 mb-4 space-y-1.5 text-neutral-400 marker:text-sky-500;
+  }
+  .legal-content a {
+    @apply text-sky-400 hover:underline font-medium;
+  }
+  .legal-content strong {
+    @apply text-neutral-200 font-medium;
+  }
 }
 
 @keyframes fade-in-up {
