@@ -52,7 +52,6 @@ class UnionArenaCard(Base):
     __tablename__ = "union_arena_cards"
 
     id = Column(Integer, primary_key=True, index=True)
+    card_code = Column(String, unique=True, nullable=False, index=True)
     name = Column(String, nullable=False, index=True)
-    card_type = Column(String, nullable=True)
-    effect_text = Column(String, nullable=True)
     image_url = Column(String, nullable=True)

@@ -357,6 +357,6 @@ def search_union_arena_cards(q: str, db: Session = Depends(get_db)):
     ).limit(8).all()
 
     return [
-        {"name": c.name, "externalId": str(c.id), "imageUrl": c.image_url or ""}
+        {"name": c.name, "externalId": c.card_code, "imageUrl": c.image_url or ""}
         for c in cards
     ]
