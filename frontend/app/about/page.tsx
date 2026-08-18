@@ -37,13 +37,36 @@ export default function AboutPage() {
       />
 
       <div className="w-full max-w-3xl legal-content">
+        <h2>Why I built this</h2>
+        <p>
+          I'm a multi-game TCG player myself, and the thing I kept running
+          into was that every game has its own separate deck tracker — one
+          app for Yu-Gi-Oh!, another for Pokémon, another for whatever else
+          you're into. None of them talk to each other, and none of them
+          are built around the actual <em>player</em>. That never made much
+          sense to me, because most TCG players I know don't just play one
+          game — you've got a Pokémon deck for league, a Yu-Gi-Oh! deck for
+          locals, and something else you're brewing on the side.
+        </p>
+        <p>
+          So I wanted one place where the player comes first: a single
+          profile that shows everything you play, across every game, tied
+          to one username.
+        </p>
+        <blockquote>
+          "Yo, check my account on DeckDen" — that's the whole idea. One
+          link, one username, your whole collection of decks across every
+          game you play.
+        </blockquote>
+
         <h2>What DeckDen does</h2>
         <p>
           DeckDen lets you build and save decklists across multiple trading
           card games, search a live card database while you build, and
           publish decks publicly so other players can browse and get ideas
           from your builds. Every account gets a public profile page that
-          collects the decks you've chosen to share.
+          collects the decks you've chosen to share — across every game you
+          play, not just one.
         </p>
 
         <h2>How it works</h2>
@@ -73,15 +96,6 @@ export default function AboutPage() {
             </li>
           ))}
         </ul>
-
-        <h2>Why it exists</h2>
-        <p>
-          Most deck-building tools are built around a single game, or bury
-          your decklist under ads and clutter. DeckDen is a smaller, faster
-          alternative: pick a game, build a deck, and get out of the way —
-          whether you're theory-crafting something new or just want a clean
-          place to keep track of what you're playing.
-        </p>
 
         <h2>Open source</h2>
         <p>

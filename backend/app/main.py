@@ -1,9 +1,19 @@
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
 from app.database import get_db, engine, Base
 from app import models, schemas
-from app.security import hash_password, verify_password, create_access_token
+from app import email as email_service
+from app.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    generate_reset_token,
+    hash_reset_token,
+)
+
+RESET_TOKEN_EXPIRE_MINUTES = 30
 
 Base.metadata.create_all(bind=engine)
 
@@ -56,6 +66,43 @@ def login(payload: schemas.UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer"
     }
 
+@app.post("/password-reset/request")
+def request_password_reset(payload: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+
+    if user:
+        raw_token = generate_reset_token()
+        db.add(models.PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_reset_token(raw_token),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES),
+        ))
+        db.commit()
+        email_service.send_password_reset_email(user.email, raw_token)
+
+    # Same response either way — this must not reveal whether an email is registered.
+    return {"message": "If that email is registered, we've sent a password reset link."}
+
+@app.post("/password-reset/confirm")
+def confirm_password_reset(payload: schemas.PasswordResetConfirm, db: Session = Depends(get_db)):
+    reset_token = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token_hash == hash_reset_token(payload.token),
+        models.PasswordResetToken.used_at.is_(None),
+    ).first()
+
+    if not reset_token or reset_token.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired")
+
+    user = db.query(models.User).filter(models.User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired")
+
+    user.hashed_password = hash_password(payload.new_password)
+    reset_token.used_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return {"message": "Password updated"}
+
 #GET CURRENT USER
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -90,6 +137,15 @@ def get_current_user(
 @app.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user)):
     return current_user
+
+@app.delete("/me")
+def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account deleted"}
 #GET CURRENT USER
 
 # DECK ENDPOINTS
@@ -355,9 +411,18 @@ def search_users(q: str, db: Session = Depends(get_db)):
 # CORS
 from fastapi.middleware.cors import CORSMiddleware
 
+# Comma-separated list so this can carry a production domain, a Vercel
+# preview URL, and local dev all at once. Defaults to local dev only so
+# nothing is silently wide-open if this is ever left unset in production.
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

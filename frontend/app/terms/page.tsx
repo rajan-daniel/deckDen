@@ -38,7 +38,8 @@ export default function TermsPage() {
         <ul>
           <li>You're responsible for keeping your password confidential and for all activity that happens under your account.</li>
           <li>You need to provide a working email address and choose a username that doesn't impersonate another person or brand.</li>
-          <li>If you believe your account has been compromised, <Link href="/contact">contact us</Link> right away.</li>
+          <li>If you believe your account has been compromised, reset your password from the login page right away, or <Link href="/contact">contact us</Link>.</li>
+          <li>You can delete your account at any time from your <Link href="/account">Account</Link> page. This is permanent and immediately removes every deck you own, public or private.</li>
         </ul>
 
         <h2>Acceptable use</h2>

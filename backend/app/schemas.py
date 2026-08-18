@@ -20,6 +20,13 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=200)
+
 class DeckCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     game: Literal["Union Arena", "Yu-Gi-Oh!", "Pokemon"]

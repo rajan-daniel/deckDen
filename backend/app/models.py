@@ -12,6 +12,9 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    decks = relationship("Deck", back_populates="owner", cascade="all, delete-orphan")
+    reset_tokens = relationship("PasswordResetToken", cascade="all, delete-orphan")
+
 class Deck(Base):
     __tablename__ = "decks"
 
@@ -29,7 +32,7 @@ class Deck(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     cards = relationship("DeckCard", back_populates="deck", cascade="all, delete-orphan")
-    owner = relationship("User")
+    owner = relationship("User", back_populates="decks")
 
 class DeckCard(Base):
     __tablename__ = "deck_cards"
@@ -48,6 +51,16 @@ class DeckCard(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     deck = relationship("Deck", back_populates="cards")
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class UnionArenaCard(Base):
     __tablename__ = "union_arena_cards"

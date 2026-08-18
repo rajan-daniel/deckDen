@@ -103,9 +103,12 @@ export function Nav() {
             <Link href="/decks/mine" className="btn-ghost">
               My Decks
             </Link>
-            <span className="hidden sm:inline text-sm text-neutral-400 px-2">
+            <Link
+              href="/account"
+              className="hidden sm:inline text-sm text-neutral-400 px-2 hover:text-sky-400 transition-colors"
+            >
               Hi, {user.username}
-            </span>
+            </Link>
             <button onClick={logout} className="btn-ghost">
               Log out
             </button>

@@ -64,6 +64,13 @@ export default function PrivacyPage() {
           browser's local storage and expires an hour after it's issued, at
           which point you'll need to log in again.
         </p>
+        <p>
+          If you request a password reset, we generate a random, single-use
+          token, store it (hashed — never the raw token) with a 30-minute
+          expiry, and email it to you. The token stops working the moment
+          it's used or that window passes, and it's cleared out entirely if
+          you delete your account.
+        </p>
 
         <h2>Cookies and tracking</h2>
         <p>
@@ -72,13 +79,26 @@ export default function PrivacyPage() {
           browser is the login session token described above.
         </p>
 
+        <h2>Password reset emails</h2>
+        <p>
+          To send password reset links, DeckDen uses{" "}
+          <a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a>,
+          a transactional email provider. Your email address is shared with
+          Resend only when you request a password reset, solely to deliver
+          that one email — it isn't used for marketing, and DeckDen doesn't
+          send any other kind of email.
+        </p>
+
         <h2>Your data, your control</h2>
         <p>
           You can delete individual decks and cards yourself at any time from
-          within your account. There's currently no self-service option to
-          delete your account entirely — to do that, or to ask what data we
-          have on file for you,{" "}
-          <Link href="/contact">contact us</Link> and we'll take care of it.
+          within your account. You can also delete your account entirely,
+          any time, from your{" "}
+          <Link href="/account">Account</Link> page — doing so immediately
+          and permanently removes your profile and every deck you own, public
+          or private. If you'd rather we handle it for you, or you have a
+          question about what data we have on file,{" "}
+          <Link href="/contact">contact us</Link>.
         </p>
 
         <h2>Children's privacy</h2>

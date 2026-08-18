@@ -1,7 +1,9 @@
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt
+import hashlib
 import os
+import secrets
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
@@ -26,3 +28,17 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def generate_reset_token() -> str:
+    """A high-entropy, one-time token to email to a user resetting their password."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    """Unlike passwords, reset tokens are already random and high-entropy, so
+    there's nothing for a slow hash like bcrypt to defend against here — and
+    bcrypt's random salt would make an exact-match DB lookup impossible. A
+    plain SHA-256 hash is the right tool: fast, deterministic, and still
+    means a leaked database doesn't hand out usable reset links."""
+    return hashlib.sha256(token.encode()).hexdigest()

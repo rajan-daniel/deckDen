@@ -252,6 +252,9 @@ body {
   .legal-content strong {
     @apply text-neutral-200 font-medium;
   }
+  .legal-content blockquote {
+    @apply border-l-2 border-sky-500 pl-4 my-6 text-neutral-200 italic;
+  }
 }
 
 @keyframes fade-in-up {
