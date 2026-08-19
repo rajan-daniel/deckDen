@@ -49,6 +49,7 @@ export default function DeckDetailPage() {
   const [addError, setAddError] = useState<string | null>(null);
   const [cardActionError, setCardActionError] = useState<string | null>(null);
   const [focusedCard, setFocusedCard] = useState<FocusedCard | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Auth token resolves asynchronously from localStorage on mount, so this
   // can fire once with token=null (401 -> falls back to the public route,
@@ -161,6 +162,15 @@ export default function DeckDetailPage() {
   }
 
   const isOwner = user?.id === deck.owner_id;
+
+  // Every add/remove already saves instantly — this button doesn't persist
+  // anything new. It exists purely because people instinctively look for a
+  // "done" action after editing, so it gives that closure (brief confirmation,
+  // then back to the deck list) instead of leaving them stranded on the page.
+  function handleDone() {
+    setJustSaved(true);
+    setTimeout(() => router.push("/decks/mine"), 600);
+  }
 
   async function handleDelete() {
     if (!confirm(`Delete "${deck?.name}"? This can't be undone.`)) return;
@@ -335,6 +345,13 @@ export default function DeckDetailPage() {
 
       {isOwner && (
         <div className="flex gap-3 mt-8 border-t border-neutral-800 pt-6">
+          <button
+            onClick={handleDone}
+            disabled={justSaved}
+            className="btn-primary py-2 px-4"
+          >
+            {justSaved ? "Saved" : "Done editing"}
+          </button>
           <Link href={`/decks/${deckId}/edit`} className="btn-secondary py-2 px-4">
             Edit deck
           </Link>
