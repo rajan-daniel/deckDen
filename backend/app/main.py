@@ -11,6 +11,7 @@ from app.security import (
     create_access_token,
     generate_reset_token,
     hash_reset_token,
+    SECRET_KEY,
 )
 
 RESET_TOKEN_EXPIRE_MINUTES = 30
@@ -110,7 +111,6 @@ import os
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
 
 def get_current_user(

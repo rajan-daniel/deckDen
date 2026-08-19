@@ -5,7 +5,14 @@ import hashlib
 import os
 import secrets
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. Generate one with "
+        "`openssl rand -hex 32` and set it in your .env (local) or your "
+        "hosting platform's environment variables (production)."
+    )
+  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
