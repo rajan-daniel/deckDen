@@ -91,6 +91,16 @@ Ran a full secrets audit before any of this goes public: confirmed no `.env` fil
 
 ---
 
+### 📅 8/19/2026
+
+Closed out the Union Arena gap. No public API exists for it, so I wrote a scraper against the official card list site instead — it reads the set/series dropdown itself rather than a hardcoded list, so a newly-released set gets picked up automatically the next time it runs, then upserts every card by its code so re-running it is always safe.
+
+Ran it for real: 46 sets, 6,343 cards, all with working art. Verified it end to end — not just that the script finished, but that the actual card search in the deck builder returns real results with real images.
+
+Found one small data quirk in the process and left it documented rather than hiding it: a handful of alternate-art variant cards carry their own code as a prefix in the name field, a quirk in how the source site formats alt text for those specific variants. Cosmetic, not broken — still fully searchable, still linked to the right art.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -101,7 +111,6 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 ## ⚙️ Upcoming Project Features
 
-* Finish the Union Arena card database
 * Automated test coverage, backend and frontend
 * Verified sending domain for password reset email (currently on Resend's shared test domain)
 * Rate limiting on auth endpoints

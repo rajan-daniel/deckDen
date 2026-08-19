@@ -10,3 +10,5 @@ python-multipart==0.0.20
 email-validator==2.2.0
 bcrypt==4.3.0
 resend==2.36.0
+httpx==0.27.2
+beautifulsoup4==4.12.3
