@@ -23,6 +23,7 @@ class Deck(Base):
 
     game = Column(String, nullable=False)  # "Union Arena", "Yu-Gi-Oh!", "Pokemon"
     format = Column(String, nullable=True)  # optional for now
+    play_style = Column(String, nullable=True)  # optional deck vibe/purpose tag
 
     description = Column(String, nullable=True)
     is_public = Column(Boolean, default=True, nullable=False)

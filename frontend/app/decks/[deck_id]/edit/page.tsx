@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
 import { Loading } from "@/app/components/loading";
+import { PLAY_STYLES } from "@/lib/deck-options";
 
 type Game = "Union Arena" | "Yu-Gi-Oh!" | "Pokemon";
 
@@ -14,6 +15,7 @@ type Deck = {
   name: string;
   game: Game;
   format: string | null;
+  play_style: string | null;
   description: string | null;
   is_public: boolean;
   owner_id: number;
@@ -31,6 +33,7 @@ function EditDeckForm() {
 
   const [name, setName] = useState("");
   const [game, setGame] = useState<Game>("Yu-Gi-Oh!");
+  const [playStyle, setPlayStyle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -43,6 +46,7 @@ function EditDeckForm() {
         setDeck(data);
         setName(data.name);
         setGame(data.game);
+        setPlayStyle(data.play_style ?? "");
         setDescription(data.description ?? "");
         setIsPublic(data.is_public);
       } catch (err) {
@@ -63,7 +67,7 @@ function EditDeckForm() {
       await apiFetch(`/decks/${deckId}`, {
         method: "PUT",
         token,
-        body: { name, game, description, is_public: isPublic },
+        body: { name, game, play_style: playStyle || null, description, is_public: isPublic },
       });
       router.push(`/decks/${deckId}`);
     } catch (err) {
@@ -109,6 +113,19 @@ function EditDeckForm() {
             <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
             <option value="Pokemon">Pokemon</option>
             <option value="Union Arena">Union Arena</option>
+          </select>
+
+          <select
+            value={playStyle}
+            onChange={(e) => setPlayStyle(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Play style (optional)</option>
+            {PLAY_STYLES.map((style) => (
+              <option key={style} value={style}>
+                {style}
+              </option>
+            ))}
           </select>
 
           <textarea

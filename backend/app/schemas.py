@@ -1,6 +1,11 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Literal
 
+PlayStyle = Literal[
+    "Competitive", "Meta", "Casual", "Fun",
+    "Beginner", "Advanced", "Budget", "Test",
+]
+
 class UserCreate(BaseModel):
     """Shape of data we REQUIRE when someone signs up."""
     username: str
@@ -31,6 +36,7 @@ class DeckCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     game: Literal["Union Arena", "Yu-Gi-Oh!", "Pokemon"]
     format: str | None = Field(default=None, max_length=100)
+    play_style: PlayStyle | None = None
     description: str | None = Field(default=None, max_length=1000)
     is_public: bool = True
 
@@ -39,6 +45,7 @@ class DeckResponse(BaseModel):
     name: str
     game: str
     format: str | None
+    play_style: str | None
     description: str | None
     is_public: bool
     owner_id: int
@@ -55,6 +62,7 @@ class DeckUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     game: Literal["Union Arena", "Yu-Gi-Oh!", "Pokemon"] | None = None
     format: str | None = Field(default=None, max_length=100)
+    play_style: PlayStyle | None = None
     description: str | None = Field(default=None, max_length=1000)
     is_public: bool | None = None
 

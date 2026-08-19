@@ -29,6 +29,7 @@ type Deck = {
   name: string;
   game: string;
   format: string | null;
+  play_style: string | null;
   description: string | null;
   is_public: boolean;
   owner_id: number;
@@ -273,6 +274,7 @@ export default function DeckDetailPage() {
         <div className="flex items-center gap-2 mt-2">
           <span className="badge-accent">{deck.game}</span>
           {deck.format && <span className="badge">{deck.format}</span>}
+          {deck.play_style && <span className="badge">{deck.play_style}</span>}
         </div>
 
         {deck.description && (

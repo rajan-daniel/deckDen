@@ -159,6 +159,7 @@ def create_deck(
         name=payload.name,
         game=payload.game,
         format=payload.format,
+        play_style=payload.play_style,
         description=payload.description,
         is_public=payload.is_public,
         owner_id=current_user.id,

@@ -7,6 +7,7 @@ export type DeckSummary = {
   name: string;
   game: string;
   format: string | null;
+  play_style: string | null;
   owner_username: string;
   preview_image_url: string | null;
   card_count: number;
@@ -37,7 +38,12 @@ export function DeckCard({ deck }: { deck: DeckSummary }) {
           </div>
         )}
         <div className="deck-card-scrim" />
-        {deck.format && <span className="deck-card-chip top-2 left-2">{deck.format}</span>}
+        {(deck.format || deck.play_style) && (
+          <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+            {deck.format && <span className="deck-card-chip static">{deck.format}</span>}
+            {deck.play_style && <span className="deck-card-chip static">{deck.play_style}</span>}
+          </div>
+        )}
         <span className="deck-card-chip top-2 right-2">
           {deck.card_count} {deck.card_count === 1 ? "card" : "cards"}
         </span>

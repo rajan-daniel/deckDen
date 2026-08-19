@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
 import { SLUG_TO_GAME } from "@/lib/games";
+import { PLAY_STYLES } from "@/lib/deck-options";
 
 function NewDeckForm() {
   const params = useParams();
@@ -16,6 +17,7 @@ function NewDeckForm() {
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const [playStyle, setPlayStyle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,13 @@ function NewDeckForm() {
       const deck = await apiFetch<{ id: number }>("/decks", {
         method: "POST",
         token,
-        body: { name, game: gameName, description, is_public: isPublic },
+        body: {
+          name,
+          game: gameName,
+          play_style: playStyle || null,
+          description,
+          is_public: isPublic,
+        },
       });
       router.push(`/decks/${deck.id}`);
     } catch (err) {
@@ -66,6 +74,19 @@ function NewDeckForm() {
             required
             className="input-field"
           />
+
+          <select
+            value={playStyle}
+            onChange={(e) => setPlayStyle(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Play style (optional)</option>
+            {PLAY_STYLES.map((style) => (
+              <option key={style} value={style}>
+                {style}
+              </option>
+            ))}
+          </select>
 
           <textarea
             placeholder="Description (optional)"
