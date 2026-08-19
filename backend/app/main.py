@@ -435,7 +435,10 @@ def search_union_arena_cards(q: str, db: Session = Depends(get_db)):
 
     cards = db.query(models.UnionArenaCard).filter(
         models.UnionArenaCard.name.ilike(f"%{q}%")
-    ).limit(8).all()
+        | models.UnionArenaCard.card_code.ilike(f"%{q}%")
+    ).order_by(
+        models.UnionArenaCard.name, models.UnionArenaCard.card_code
+    ).limit(50).all()
 
     return [
         {"name": c.name, "externalId": c.card_code, "imageUrl": c.image_url or ""}
