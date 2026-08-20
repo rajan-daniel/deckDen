@@ -46,7 +46,7 @@ export default function AboutPage() {
           are built around the actual <em>player</em>. That never made much
           sense to me, because most TCG players I know don't just play one
           game — you've got a Pokémon deck for league, a Yu-Gi-Oh! deck for
-          locals, and something else you're brewing on the side.
+          locals, and something else you're playing on the side.
         </p>
         <p>
           So I wanted one place where the player comes first: a single
@@ -54,7 +54,7 @@ export default function AboutPage() {
           to one username.
         </p>
         <blockquote>
-          "Yo, check my account on DeckDen" — that's the whole idea. One
+          "Yo, check my UA deck on DeckDen" — that's the whole idea. One
           link, one username, your whole collection of decks across every
           game you play.
         </blockquote>
@@ -99,7 +99,7 @@ export default function AboutPage() {
 
         <h2>Open source</h2>
         <p>
-          DeckDen is a solo, ongoing project — built with Next.js and
+          DeckDen is an independent, ongoing project — built with Next.js and
           Tailwind CSS on the frontend, and FastAPI with PostgreSQL on the
           backend. The code is public on{" "}
           <a
