@@ -26,6 +26,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * 🔍 Live card search pulled straight from each game's real card database
 * 🌐 Public profiles that show everything a player builds across every game, not just one
 * 🔒 Public or private visibility, set per deck
+* 🏷️ Optional play style tags (Competitive, Meta, Casual, Fun, Beginner, Advanced, Budget, Test)
 * 🔐 Secure authentication — hashed passwords, JWT sessions
 * ✉️ Self-service password reset via email
 * 🗑️ Self-service account deletion, with data actually cleaned up behind it
@@ -98,6 +99,20 @@ Closed out the Union Arena gap. No public API exists for it, so I wrote a scrape
 Ran it for real: 46 sets, 6,343 cards, all with working art. Verified it end to end — not just that the script finished, but that the actual card search in the deck builder returns real results with real images.
 
 Found one small data quirk in the process and left it documented rather than hiding it: a handful of alternate-art variant cards carry their own code as a prefix in the name field, a quirk in how the source site formats alt text for those specific variants. Cosmetic, not broken — still fully searchable, still linked to the right art.
+
+Made `SECRET_KEY` fail loudly instead of quietly falling back to a known default if it's ever missing — the app now refuses to start rather than running insecurely without anyone noticing. Also found and cleaned up a second, unsynced copy of that same value that a previous pass had missed.
+
+Turned real user testing into two more fixes on the Union Arena search: it only matched the card name field and capped results at 8 with no explicit order, so a common character with many printings could silently push a real card out of the visible results. Now it also matches the card code, orders results deterministically, and raises the cap to 50. Cleared out two leftover placeholder rows from before the real scraper existed while I was in there.
+
+Added an optional play style tag to decks — Competitive, Meta, Casual, Fun, Beginner, Advanced, Budget, or Test — shown as a chip on the deck page and on the deck cards. Genuinely optional: no tag is the default, not a forced choice.
+
+Added a "Done editing" button to the deck page. Every add/remove already saves instantly, but testing showed people still instinctively look for a save button when they're finished — this doesn't persist anything new, it just gives that moment of closure and takes you back to your deck list.
+
+---
+
+### 📅 8/20/2026
+
+Replaced the old icon with a proper logo mark, colored with the same sky-to-purple gradient the rest of the app already uses, no background badge behind it this time — just the mark itself, in the navbar, the footer, and the favicon. Redid the favicon centering math from scratch, since the new mark doesn't fill its own bounding box the way the old one did — a naive "scale the whole viewBox" transform left it small and off-center until it was centered on the mark's actual visible bounds instead.
 
 ---
 
