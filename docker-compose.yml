@@ -19,6 +19,9 @@ services:
     build: ./backend
     container_name: deckden-api
     restart: unless-stopped
+    # Dockerfile's CMD is the production command (no --reload). Local dev
+    # overrides it here so editing files under ./backend/app still hot-reloads.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     env_file:
       - .env
     ports:
