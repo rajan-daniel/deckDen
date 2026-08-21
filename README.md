@@ -116,6 +116,20 @@ Replaced the old icon with a proper logo mark, colored with the same sky-to-purp
 
 ---
 
+### 📅 8/21/2026
+
+Deployed for real: Railway for the backend and Postgres, Vercel for the frontend. First deploy on either platform for me, so this was also the first time finding out `--reload` has no business being in a production Dockerfile — moved it into a docker-compose override so local dev keeps hot-reloading while the image Railway actually builds doesn't carry a dev-only flag.
+
+The production database starts completely empty — no local test data, but also no Union Arena cards, which meant re-running the import script against it, this time over `railway ssh` into the real deployed container instead of `railway run` (which executes locally with Railway's env vars injected, not inside the container — good to actually understand the difference instead of assuming).
+
+Went live and immediately hit two real, separate misconfigurations during the smoke test rather than assuming a green build meant a working site: the backend was rejecting the frontend's requests outright because `CORS_ORIGINS` didn't exactly match the real Vercel URL, and separately the frontend was calling a backend URL that turned out to be a placeholder I'd used in an example earlier and never corrected — worth admitting since it's exactly the kind of mistake that's easy to wave through if you don't actually test the live thing end to end instead of trusting each piece in isolation.
+
+Verified a custom domain with Resend (a subdomain of my own site, isolated from my personal domain's existing mail setup on purpose) so password reset emails now come from a real address instead of the shared `onboarding@resend.dev` sandbox, which only ever delivers to the account owner regardless of who signs up.
+
+Real usage surfaced two more bugs. Pokémon search was prefix-only (`name:query*`), so it silently missed anything where the search term wasn't the start of the name — "Snorlax" wouldn't find "Hop's Snorlax." Fixed by wildcarding both sides. While digging into a slowness complaint, found the actual cause wasn't the app at all: the free Pokémon TCG API is being sunset in favor of a paid successor (Scrydex, no free tier, starts at $29/month) and is returning real intermittent server errors under normal use now — confirmed directly, not assumed. Decided to keep using the free endpoint as-is rather than pay for a hobby project or take on a much bigger scrape than Union Arena's, but fixed the part that was actually misleading: a failed request was being treated identically to "zero results," so a real outage looked exactly like "no cards found." Now it surfaces as an actual error instead of a false negative.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -127,7 +141,6 @@ What started as a basic deck CRUD app grew into a complete account system with r
 ## ⚙️ Upcoming Project Features
 
 * Automated test coverage, backend and frontend
-* Verified sending domain for password reset email (currently on Resend's shared test domain)
 * Rate limiting on auth endpoints
 * Open Graph previews for shareable profile links
 * Dedicated mobile pass
@@ -150,7 +163,7 @@ DeckDen can be used for:
 
 View the live project here:
 
-_[add your deployed URL here once it's live]_
+https://deck-den.vercel.app
 
 GitHub Repository:
 
