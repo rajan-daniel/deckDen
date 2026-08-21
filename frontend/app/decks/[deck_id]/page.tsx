@@ -58,15 +58,37 @@ export default function DeckDetailPage() {
   // faster, correct one's state after the fact.
   const requestIdRef = useRef(0);
 
+  // Kept in sync with `deck` state, but readable synchronously mid-render —
+  // handleSelectCard needs the *current* card list at the moment each queued
+  // add actually runs, not whatever was captured in the closure when the
+  // click happened.
+  const deckRef = useRef<Deck | null>(null);
+
+  // Spam-clicking "+ Main" fires handleSelectCard many times before the
+  // first request's loadDeck() ever resolves, so every one of those calls
+  // would otherwise decide independently "this card isn't in the deck yet"
+  // and each create its own row instead of one row incrementing. Chaining
+  // every call onto this promise forces them to run one at a time — each
+  // one waits for the previous add *and* its follow-up loadDeck() to fully
+  // finish before it looks at deckRef.current, so it always sees the result
+  // of the click before it, not a stale snapshot.
+  const addCardChainRef = useRef<Promise<void>>(Promise.resolve());
+
   async function loadDeck() {
     const requestId = ++requestIdRef.current;
     try {
       const data = await apiFetch<Deck>(`/me/decks/${deckId}`, { token });
-      if (requestIdRef.current === requestId) setDeck(data);
+      if (requestIdRef.current === requestId) {
+        setDeck(data);
+        deckRef.current = data;
+      }
     } catch (err) {
       try {
         const data = await apiFetch<Deck>(`/decks/${deckId}`);
-        if (requestIdRef.current === requestId) setDeck(data);
+        if (requestIdRef.current === requestId) {
+          setDeck(data);
+          deckRef.current = data;
+        }
       } catch (err2) {
         if (requestIdRef.current === requestId) {
           setError(err2 instanceof ApiError ? err2.message : "Deck not found");
@@ -83,7 +105,17 @@ export default function DeckDetailPage() {
 
   const isYugioh = deck?.game === "Yu-Gi-Oh!";
 
-  async function handleSelectCard(
+  function handleSelectCard(
+    card: { name: string; externalId: string; imageUrl: string },
+    section?: DeckSection,
+  ) {
+    // Enqueue rather than run immediately — see addCardChainRef above.
+    addCardChainRef.current = addCardChainRef.current.then(() =>
+      addCardToDeck(card, section),
+    );
+  }
+
+  async function addCardToDeck(
     card: { name: string; externalId: string; imageUrl: string },
     section?: DeckSection,
   ) {
@@ -95,7 +127,7 @@ export default function DeckDetailPage() {
         : MAIN_DECK_CATEGORY
       : null;
 
-    const existing = deck?.cards.find((c) =>
+    const existing = deckRef.current?.cards.find((c) =>
       (card.externalId
         ? c.external_card_id === card.externalId
         : c.card_name === card.name) && c.category === category,
