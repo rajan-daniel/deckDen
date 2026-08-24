@@ -22,20 +22,15 @@ async function searchYuGiOh(query: string): Promise<NormalizedCard[]> {
 }
 
 async function searchPokemon(query: string): Promise<NormalizedCard[]> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const res = await fetch(
-    `https://api.pokemontcg.io/v2/cards?q=name:*${encodeURIComponent(query)}*&pageSize=50`
+    `${API_URL}/card-search/pokemon?q=${encodeURIComponent(query)}`
   );
-  // Unlike YGOPRODeck, a zero-match Pokemon search returns 200 with an empty
-  // array — a non-ok response here always means the API actually failed, so
-  // it should surface as a real search error, not silently look like "no
-  // results found."
+  // Proxied through our own backend so the Pokemon TCG API key stays
+  // server-side. Our own backend only ever returns non-ok for a real
+  // failure — a zero-match search still comes back 200 with an empty array.
   if (!res.ok) throw new Error("Pokemon card search failed");
-  const data = await res.json();
-  return (data.data ?? []).map((card: any) => ({
-    name: card.name,
-    externalId: card.id,
-    imageUrl: card.images?.small ?? "",
-  }));
+  return res.json();
 }
 
 async function searchUnionArena(query: string): Promise<NormalizedCard[]> {

@@ -38,12 +38,10 @@ describe("getCardSearchFn", () => {
   });
 
   describe("Pokemon", () => {
-    it("normalizes matches from the Pokemon TCG API", async () => {
+    it("passes through the backend's already-normalized results", async () => {
       mockFetchOnce({
         ok: true,
-        json: async () => ({
-          data: [{ id: "base1-58", name: "Pikachu", images: { small: "https://x/pika.png" } }],
-        }),
+        json: async () => [{ name: "Pikachu", externalId: "base1-58", imageUrl: "https://x/pika.png" }],
       });
 
       const result = await getCardSearchFn("Pokemon")("pikachu");

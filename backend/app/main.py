@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import httpx
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
@@ -443,5 +444,46 @@ def search_union_arena_cards(q: str, db: Session = Depends(get_db)):
 
     return [
         {"name": c.name, "externalId": c.card_code, "imageUrl": c.image_url or ""}
+        for c in cards
+    ]
+
+# Proxied so the API key stays server-side instead of sitting in a client-side
+# fetch where anyone's devtools could read it and burn through our quota.
+POKEMON_TCG_API_KEY = os.getenv("POKEMON_TCG_API_KEY")
+
+async def _fetch_pokemon_cards(query: str) -> list[dict]:
+    headers = {"X-Api-Key": POKEMON_TCG_API_KEY} if POKEMON_TCG_API_KEY else {}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(
+                "https://api.pokemontcg.io/v2/cards",
+                params={"q": f"name:*{query}*", "pageSize": 50},
+                headers=headers,
+            )
+    except httpx.HTTPError:
+        # Covers timeouts and connection failures, not just a bad status
+        # code - the whole point of proxying is to survive the upstream
+        # API being slow or flaky, so this can't be allowed to bubble up
+        # as a raw 500.
+        raise HTTPException(status_code=502, detail="Pokemon card search failed")
+
+    if res.status_code != 200:
+        raise HTTPException(status_code=502, detail="Pokemon card search failed")
+
+    return res.json().get("data", [])
+
+@app.get("/card-search/pokemon")
+async def search_pokemon_cards(q: str):
+    if len(q.strip()) < 2:
+        return []
+
+    cards = await _fetch_pokemon_cards(q)
+
+    return [
+        {
+            "name": c["name"],
+            "externalId": c["id"],
+            "imageUrl": c.get("images", {}).get("small", ""),
+        }
         for c in cards
     ]
