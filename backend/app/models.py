@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.database import Base, TZDateTime
 
 class User(Base):
     __tablename__ = "users"
@@ -10,7 +10,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(TZDateTime, server_default=func.now())
 
     decks = relationship("Deck", back_populates="owner", cascade="all, delete-orphan")
     reset_tokens = relationship("PasswordResetToken", cascade="all, delete-orphan")
@@ -30,7 +30,7 @@ class Deck(Base):
 
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(TZDateTime, server_default=func.now())
 
     cards = relationship("DeckCard", back_populates="deck", cascade="all, delete-orphan")
     owner = relationship("User", back_populates="decks")
@@ -49,7 +49,7 @@ class DeckCard(Base):
     category = Column(String, nullable=True)
     notes = Column(String, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(TZDateTime, server_default=func.now())
 
     deck = relationship("Deck", back_populates="cards")
 
@@ -59,9 +59,9 @@ class PasswordResetToken(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     token_hash = Column(String, unique=True, index=True, nullable=False)
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    used_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(TZDateTime, nullable=False)
+    used_at = Column(TZDateTime, nullable=True)
+    created_at = Column(TZDateTime, server_default=func.now())
 
 class UnionArenaCard(Base):
     __tablename__ = "union_arena_cards"

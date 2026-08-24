@@ -12,7 +12,6 @@ if not SECRET_KEY:
         "`openssl rand -hex 32` and set it in your .env (local) or your "
         "hosting platform's environment variables (production)."
     )
-  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
