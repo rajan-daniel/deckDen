@@ -189,6 +189,6 @@ https://github.com/rajan-daniel/deckDen
 
 ## 📄 License
 
-Copyright © 2026 Rajan Daniel
+MIT License — Copyright © 2026 Rajan Daniel
 
-All Rights Reserved.
+Free to use, modify, and distribute. See [LICENSE](LICENSE) for the full text.
