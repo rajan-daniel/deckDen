@@ -140,6 +140,10 @@ The very first run caught a real bug, not a testing artifact: `confirm_password_
 
 Backend tests run inside a throwaway Docker container rather than locally, since this machine has no Python install — which turned out to double as a decent CI dry run: install from a clean `requirements-dev.txt`, run the suite, done, no leftover local state involved.
 
+Chased down why Pokémon card search felt noticeably slower live than on localhost. The working theory going in was "Railway's free tier" — wrong on both counts, checked rather than assumed: Railway's free plan doesn't cold-start unless serverless mode is explicitly turned on, and Pokémon search wasn't even routed through Railway at all — it was a direct, unauthenticated fetch straight from the browser to the Pokémon TCG API, capped at 1,000 requests/day and 30/minute shared across every visitor. Proxied it through the backend instead — same pattern Union Arena search already used — so a real API key can be sent server-side via `X-Api-Key` (20,000/day instead of 1,000) without ever exposing it in a browser devtools tab.
+
+Testing that live instead of trusting it turned up a second, more interesting problem: the proxy itself crashed with a raw, unhandled 500 whenever the upstream request timed out or the connection failed outright — it only handled a bad status code, not the request failing to complete at all. Worse, hammering Pokémon's API directly from inside the container with the real key showed real 500s and actual Cloudflare 502 pages coming back roughly half the time, independent of the key or Railway entirely — their free tier is just genuinely unreliable right now. So the API key was never going to be a full fix for "slow," and now it isn't pretending to be one: the proxy catches transport failures the same way it catches bad statuses, bounds the wait to a 10-second timeout, and fails clean instead of hanging or crashing.
+
 ---
 
 ## 🎯 Final Outcome
