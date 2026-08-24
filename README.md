@@ -17,6 +17,8 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * Docker
 * Resend (transactional email)
 * Vercel
+* pytest
+* Vitest + React Testing Library
 
 ---
 
@@ -130,6 +132,16 @@ Real usage surfaced two more bugs. Pokémon search was prefix-only (`name:query*
 
 ---
 
+### 📅 8/24/2026
+
+Added the automated test coverage that's been on the roadmap since the first deploy: a 48-test pytest suite for the backend (signup/login/JWT auth, password reset including the "don't leak which emails are registered" guarantee, deck and card CRUD with real ownership/permission checks, search) and a 23-test Vitest + React Testing Library suite for the frontend (the shared fetch wrapper, all three card-search integrations, the debounce hook, and session persistence/login/logout). Backend tests run against a real SQLite database rather than mocks, so they're actually exercising the ORM and the SQL, not just routing.
+
+The very first run caught a real bug, not a testing artifact: `confirm_password_reset` compares a token's stored expiry against `datetime.now(timezone.utc)`, and that comparison has only ever "worked" in production by accident, because Postgres' `TIMESTAMPTZ` always returns timezone-aware datetimes. SQLite has no native timezone-aware storage and was silently handing back naive ones instead, crashing the comparison outright. Fixed with a small `TZDateTime` type that normalizes timezone info on the way in and out of the database — then verified it changes nothing against the real thing, not just the test double: spun up a throwaway database inside the existing Postgres dev container, ran the full suite against it, 48/48 passed, dropped it.
+
+Backend tests run inside a throwaway Docker container rather than locally, since this machine has no Python install — which turned out to double as a decent CI dry run: install from a clean `requirements-dev.txt`, run the suite, done, no leftover local state involved.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -140,7 +152,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 ## ⚙️ Upcoming Project Features
 
-* Automated test coverage, backend and frontend
+* CI pipeline to run the test suite automatically on every push
 * Rate limiting on auth endpoints
 * Open Graph previews for shareable profile links
 * Dedicated mobile pass
