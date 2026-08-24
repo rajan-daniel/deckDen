@@ -177,6 +177,8 @@ DeckDen can be used for:
 
 ## 🌐 Live Preview
 
+https://github.com/user-attachments/assets/5f4183e6-fe31-44fa-85c5-409be35bed2b
+
 View the live project here:
 
 https://deck-den.vercel.app
