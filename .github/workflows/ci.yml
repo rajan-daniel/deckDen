@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  # Run on the merge commit after something lands, so main's status is always current.
+  push:
+    branches: [main]
+  # Run on every PR, regardless of the branch it comes from.
+  pull_request:
+
+# If new commits are pushed to the same branch/PR while a run is in progress,
+# cancel the stale run instead of paying for both.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# These jobs only read the checked-out code. Don't hand them write scopes.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Single source of truth: backend/.python-version (also read by pyenv locally).
+          python-version-file: backend/.python-version
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: pytest
+
+  frontend:
+    name: frontend (vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Single source of truth: frontend/.nvmrc (also read by nvm/fnm locally).
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run vitest
+        run: npm test
