@@ -4,6 +4,12 @@ export type NormalizedCard = {
   imageUrl: string;
 };
 
+type YgoprodeckCard = {
+  id: number;
+  name: string;
+  card_images?: { image_url_small?: string }[];
+};
+
 async function searchYuGiOh(query: string): Promise<NormalizedCard[]> {
   const res = await fetch(
     `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`
@@ -14,7 +20,7 @@ async function searchYuGiOh(query: string): Promise<NormalizedCard[]> {
   // stay silent rather than surface as a search error.
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.data ?? []).slice(0, 50).map((card: any) => ({
+  return (data.data ?? []).slice(0, 50).map((card: YgoprodeckCard) => ({
     name: card.name,
     externalId: String(card.id),
     imageUrl: card.card_images?.[0]?.image_url_small ?? "",
