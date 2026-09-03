@@ -82,7 +82,7 @@ export default function DeckDetailPage() {
         setDeck(data);
         deckRef.current = data;
       }
-    } catch (err) {
+    } catch {
       try {
         const data = await apiFetch<Deck>(`/decks/${deckId}`);
         if (requestIdRef.current === requestId) {

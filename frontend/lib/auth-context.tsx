@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { apiFetch, ApiError } from "./api";
+import { apiFetch } from "./api";
 
 type User = {
   id: number;
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const currentUser = await apiFetch<User>("/me", { token: currentToken });
       setUser(currentUser);
-    } catch (err) {
+    } catch {
       localStorage.removeItem("token");
       setToken(null);
       setUser(null);
