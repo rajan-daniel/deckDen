@@ -156,7 +156,6 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 ## ⚙️ Upcoming Project Features
 
-* CI pipeline to run the test suite automatically on every push
 * Rate limiting on auth endpoints
 * Open Graph previews for shareable profile links
 * Dedicated mobile pass
