@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import httpx
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import text
 from app.database import get_db, engine, Base
@@ -487,3 +487,112 @@ async def search_pokemon_cards(q: str):
         }
         for c in cards
     ]
+
+#webauthn Section
+import json
+from webauthn import generate_registration_options, options_to_json, verify_registration_response
+from webauthn.helpers import bytes_to_base64url, parse_registration_credential_json, base64url_to_bytes
+from sqlalchemy.exc import IntegrityError
+
+@app.post("/webauthn/register/options")
+async def get_registration_options(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    WEBAUTHN_RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
+
+    options = generate_registration_options(
+        rp_id=WEBAUTHN_RP_ID,
+        rp_name="DeckDen",
+        user_id=str(current_user.id).encode("utf-8"),
+        user_name=current_user.email,
+    )
+
+    challenge_row = models.WebAuthnChallenge(
+    user_id=current_user.id,
+    challenge=bytes_to_base64url(options.challenge),
+    purpose="registration",
+    expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+)
+    db.add(challenge_row)
+    db.commit()
+
+    json_string = options_to_json(options)
+    return json.loads(json_string)
+
+@app.post("/webauthn/register/verify")
+async def verify_registration(
+    payload: dict,  # Captures the raw JSON directly from the browser's startRegistration()
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    WEBAUTHN_RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
+    # Origin is the *frontend's* origin (where the browser page making the
+    # WebAuthn call is loaded from) - not this API's own origin. Same default
+    # as CORS_ORIGINS below, for the same reason: local Next.js dev runs on
+    # :3000, this API runs on :8000.
+    WEBAUTHN_EXPECTED_ORIGIN = os.getenv("WEBAUTHN_EXPECTED_ORIGIN", "http://localhost:3000")
+
+    # 1. Fetch the active, unused registration challenge
+    challenge_row = db.query(models.WebAuthnChallenge).filter(
+        models.WebAuthnChallenge.user_id == current_user.id,
+        models.WebAuthnChallenge.purpose == "registration",
+        models.WebAuthnChallenge.used_at.is_(None),
+    ).order_by(models.WebAuthnChallenge.expires_at.desc()).first()
+
+    if not challenge_row:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration challenge not found.",
+        )
+
+    # 2. Check expiration
+    if datetime.now(timezone.utc) > challenge_row.expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Challenge has expired.",
+        )
+
+    # Invalidate the challenge now, before attempting verification, so it's
+    # single-use regardless of whether verification below succeeds or fails.
+    challenge_row.used_at = datetime.now(timezone.utc)
+    db.commit()
+
+    try:
+        # 3. Parse raw dict into the WebAuthn typed object
+        credential = parse_registration_credential_json(payload)
+
+        # 4. Cryptographically verify the client's payload
+        verified = verify_registration_response(
+            credential=credential,
+            expected_challenge=base64url_to_bytes(challenge_row.challenge),
+            expected_origin=WEBAUTHN_EXPECTED_ORIGIN,
+            expected_rp_id=WEBAUTHN_RP_ID,
+            require_user_verification=True,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passkey registration failed.",
+        )
+
+    # 5. Create the persistent WebAuthn credential record
+    new_credential = models.WebAuthnCredential(
+        user_id=current_user.id,
+        credential_id=bytes_to_base64url(verified.credential_id),
+        public_key=bytes_to_base64url(verified.credential_public_key),
+        sign_count=verified.sign_count,
+    )
+    db.add(new_credential)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This passkey is already registered.",
+        )
+
+    return {"status": "success", "message": "Passkey registered successfully"}
+#end of webauthn
