@@ -14,6 +14,8 @@ class User(Base):
 
     decks = relationship("Deck", back_populates="owner", cascade="all, delete-orphan")
     reset_tokens = relationship("PasswordResetToken", cascade="all, delete-orphan")
+    webauthn_credentials = relationship("WebAuthnCredential", cascade="all, delete-orphan")
+    webauthn_challenges = relationship("WebAuthnChallenge", cascade="all, delete-orphan")
 
 class Deck(Base):
     __tablename__ = "decks"
@@ -59,6 +61,29 @@ class PasswordResetToken(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     token_hash = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(TZDateTime, nullable=False)
+    used_at = Column(TZDateTime, nullable=True)
+    created_at = Column(TZDateTime, server_default=func.now())
+
+class WebAuthnCredential(Base):
+    __tablename__ = "webauthn_credentials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    credential_id = Column(String, unique=True, nullable=False, index=True)
+    public_key = Column(String, nullable=False)
+    sign_count = Column(Integer, nullable=False, default=0)
+    device_label = Column(String, nullable=True)
+    created_at = Column(TZDateTime, server_default=func.now())
+    last_used_at = Column(TZDateTime, nullable=True)
+
+class WebAuthnChallenge(Base):
+    __tablename__ = "webauthn_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    challenge = Column(String, nullable=False)
+    purpose = Column(String, nullable=False)  # "registration" or "login"
     expires_at = Column(TZDateTime, nullable=False)
     used_at = Column(TZDateTime, nullable=True)
     created_at = Column(TZDateTime, server_default=func.now())
