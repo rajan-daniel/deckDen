@@ -25,6 +25,9 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class PasskeyLoginOptionsRequest(BaseModel):
+    email: EmailStr
+
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
