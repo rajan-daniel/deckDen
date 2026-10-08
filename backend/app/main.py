@@ -488,11 +488,19 @@ async def search_pokemon_cards(q: str):
         for c in cards
     ]
 
-#webauthn Section
+#webauthn Section Passkeys
 import json
-from webauthn import generate_registration_options, options_to_json, verify_registration_response
-from webauthn.helpers import bytes_to_base64url, parse_registration_credential_json, base64url_to_bytes
+import logging
+from webauthn import generate_registration_options, options_to_json, verify_registration_response, generate_authentication_options, verify_authentication_response
+from webauthn.helpers import bytes_to_base64url, parse_registration_credential_json, base64url_to_bytes, parse_authentication_credential_json
 from sqlalchemy.exc import IntegrityError
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria,
+    PublicKeyCredentialDescriptor,
+    UserVerificationRequirement,
+)
+
+logger = logging.getLogger("deckden.webauthn")
 
 @app.post("/webauthn/register/options")
 async def get_registration_options(
@@ -506,6 +514,11 @@ async def get_registration_options(
         rp_name="DeckDen",
         user_id=str(current_user.id).encode("utf-8"),
         user_name=current_user.email,
+        # Must match require_user_verification=True in register/verify, or the
+        # authenticator may legitimately skip verification and we'd reject it.
+        authenticator_selection=AuthenticatorSelectionCriteria(
+            user_verification=UserVerificationRequirement.REQUIRED,
+        ),
     )
 
     challenge_row = models.WebAuthnChallenge(
@@ -571,6 +584,8 @@ async def verify_registration(
             require_user_verification=True,
         )
     except Exception:
+        # Client gets a generic message; the real reason goes to the server log.
+        logger.exception("WebAuthn registration verification failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Passkey registration failed.",
@@ -595,4 +610,133 @@ async def verify_registration(
         )
 
     return {"status": "success", "message": "Passkey registered successfully"}
+#webauthn Login begin
+@app.post("/webauthn/login/options")
+async def get_login_options(
+    payload: schemas.PasskeyLoginOptionsRequest, db: Session = Depends(get_db)
+):
+    #edge case of null input
+    if not payload.email:
+        raise HTTPException(status_code=400, detail="Email field cannot be empty")
+
+    WEBAUTHN_RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
+    # 1. Fetch user from database using payload (e.g., email or username)
+    user = (
+        db.query(models.User)
+        .filter(models.User.email == payload.email)
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # 2. Query all registered WebAuthn credentials for this specific user
+    user_credentials = (
+        db.query(models.WebAuthnCredential)
+        .filter(models.WebAuthnCredential.user_id == user.id)
+        .all()
+    )
+
+    # A user with no registered passkeys fails the same generic way as an
+    # unknown user - same status, same message. Also avoids passing an empty
+    # allow_credentials list into generate_authentication_options, which
+    # options_to_json can't serialize (AttributeError: 'str' object has no
+    # attribute 'value').
+    if not user_credentials:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # 3. Format the credentials array for the options payload
+    allowed_credentials = [
+        PublicKeyCredentialDescriptor(id=base64url_to_bytes(cred.credential_id))
+        for cred in user_credentials
+    ]
+
+    # 4. Generate the cryptographic challenge options
+    options = generate_authentication_options(
+        rp_id=WEBAUTHN_RP_ID,
+        allow_credentials=allowed_credentials,
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+
+    # 5. Correctly store the login challenge using the fetched user's ID
+    challenge_row = models.WebAuthnChallenge(
+        user_id=user.id,
+        challenge=bytes_to_base64url(options.challenge),
+        purpose="login",
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+    )
+    
+    db.add(challenge_row)
+    db.commit()
+
+    # 6. Safely parse the generated option string to JSON dict format
+    json_string = options_to_json(options)  # the library supplies a built-in JSON conversion tool
+    return json.loads(json_string)
+
+@app.post("/webauthn/login/verify")
+async def verify_login(
+    payload: dict,
+    db: Session = Depends(get_db),
+):
+    WEBAUTHN_RP_ID = os.getenv("WEBAUTHN_RP_ID", "localhost")
+    WEBAUTHN_EXPECTED_ORIGIN = os.getenv("WEBAUTHN_EXPECTED_ORIGIN", "http://localhost:3000")
+
+    # 1. Parse first - we don't know who's logging in until we read the
+    # credential's own id. That's why this endpoint isn't auth-gated: there's
+    # no session yet to gate on, same as password /login.
+    try:
+        credential = parse_authentication_credential_json(payload)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # 2. The credential's id tells us which stored credential - and
+    # therefore which user - this is. We don't know the user until this
+    # lookup succeeds.
+    cred_row = db.query(models.WebAuthnCredential).filter(
+        models.WebAuthnCredential.credential_id == credential.id
+    ).first()
+
+    if not cred_row:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # 3. Find the matching, unused, unexpired login challenge for that user.
+    challenge_row = db.query(models.WebAuthnChallenge).filter(
+        models.WebAuthnChallenge.user_id == cred_row.user_id,
+        models.WebAuthnChallenge.purpose == "login",
+        models.WebAuthnChallenge.used_at.is_(None),
+    ).order_by(models.WebAuthnChallenge.expires_at.desc()).first()
+
+    if not challenge_row or datetime.now(timezone.utc) > challenge_row.expires_at:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Invalidate now, before verification - single-use regardless of
+    # outcome, same reasoning as register/verify in WA-2.
+    challenge_row.used_at = datetime.now(timezone.utc)
+    db.commit()
+
+    try:
+        verified = verify_authentication_response(
+            credential=credential,
+            expected_challenge=base64url_to_bytes(challenge_row.challenge),
+            expected_rp_id=WEBAUTHN_RP_ID,
+            expected_origin=WEBAUTHN_EXPECTED_ORIGIN,
+            credential_public_key=base64url_to_bytes(cred_row.public_key),
+            credential_current_sign_count=cred_row.sign_count,
+            require_user_verification=True,
+        )
+    except Exception:
+        logger.exception("WebAuthn login verification failed")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # 4. Update the stored sign_count so a future login can detect a cloned
+    # authenticator, and record when this passkey was last actually used.
+    cred_row.sign_count = verified.new_sign_count
+    cred_row.last_used_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # 5. Same session issuance as password login - the frontend doesn't need
+    # to know or care which path got the user here.
+    access_token = create_access_token(data={"sub": str(cred_row.user_id)})
+
+    return {"access_token": access_token, "token_type": "bearer"}
+#webauthn Login end
 #end of webauthn
