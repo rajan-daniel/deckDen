@@ -739,4 +739,44 @@ async def verify_login(
 
     return {"access_token": access_token, "token_type": "bearer"}
 #webauthn Login end
+
+#webauthn Manage begin
+@app.get("/webauthn/credentials", response_model=list[schemas.WebAuthnCredentialResponse])
+def list_my_passkeys(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    # Scoped to the logged-in user: you can only ever see your own passkeys.
+    return (
+        db.query(models.WebAuthnCredential)
+        .filter(models.WebAuthnCredential.user_id == current_user.id)
+        .order_by(
+            models.WebAuthnCredential.created_at.desc(),
+            models.WebAuthnCredential.id.desc(),
+        )
+        .all()
+    )
+
+@app.delete("/webauthn/credentials/{passkey_id}")
+def delete_my_passkey(
+    passkey_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    # Filter by id AND owner. Without the user_id condition, any logged-in
+    # user could delete anyone's passkey just by guessing row numbers.
+    # Someone else's passkey gets the same 404 as one that doesn't exist, so
+    # the response never confirms which ids are real.
+    passkey = db.query(models.WebAuthnCredential).filter(
+        models.WebAuthnCredential.id == passkey_id,
+        models.WebAuthnCredential.user_id == current_user.id,
+    ).first()
+
+    if passkey is None:
+        raise HTTPException(status_code=404, detail="Passkey not found")
+
+    db.delete(passkey)
+    db.commit()
+    return {"message": "Passkey removed"}
+#webauthn Manage end
 #end of webauthn
