@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 from typing import Literal
 
@@ -104,6 +105,17 @@ class DeckWithCardsResponse(DeckResponse):
 class UserSearchResult(BaseModel):
     id: int
     username: str
+
+    class Config:
+        from_attributes = True
+
+class WebAuthnCredentialResponse(BaseModel):
+    """A passkey as the account page sees it. Deliberately omits public_key,
+    credential_id, and sign_count - the UI never needs them."""
+    id: int
+    device_label: str | None
+    created_at: datetime
+    last_used_at: datetime | None
 
     class Config:
         from_attributes = True
