@@ -16,6 +16,8 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * SQLAlchemy
 * Docker
 * Resend (transactional email)
+* WebAuthn / passkeys (py_webauthn, @simplewebauthn/browser)
+* Render
 * Vercel
 * pytest
 * Vitest + React Testing Library
@@ -31,6 +33,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * 🏷️ Optional play style tags (Competitive, Meta, Casual, Fun, Beginner, Advanced, Budget, Test)
 * 🔐 Secure authentication — hashed passwords, JWT sessions
 * ✉️ Self-service password reset via email
+* 🔑 Passkey (WebAuthn) support — add, list, and remove passkeys from the account page, alongside password login (passkey sign-in on the login page is next)
 * 🗑️ Self-service account deletion, with data actually cleaned up behind it
 * 🔎 Click-to-zoom card focus view, sized consistently across games
 * 📱 Fully responsive, consistent dark-themed design system
@@ -40,7 +43,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 
 ## 📍 The Process
 
-DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system.
+DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and is now growing passkey support.
 
 Rather than summarizing the process after the fact, the timeline below walks through how it actually came together — kept as short, in-the-moment notes rather than a polished retrospective, so the real decisions, bugs, and milestones stay visible instead of getting smoothed over.
 
@@ -132,6 +135,32 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 * Rebuilt clean instead of restoring — the database only held test data, so it wasn't worth preserving. Re-ran the Union Arena import (safe to re-run) against the new database instead.
 * Fixed the Dockerfile to read the port Render assigns dynamically via `$PORT` instead of a hardcoded `8000`.
 * Updated `CORS_ORIGINS` and the frontend's `NEXT_PUBLIC_API_URL` to point at the new backend, verified the live site end to end, then decommissioned Railway.
+* Started passkey (WebAuthn) support, schema first: a credentials table and a separate short-lived challenges table, kept apart on purpose because one is durable account data and the other is ~60 seconds of throwaway state. Strictly additive — password login is untouched.
+
+---
+
+### 📅 9/22/2026
+
+* Added passkey registration: `POST /webauthn/register/options` and `/verify`, using `py_webauthn`.
+* A challenge is invalidated *before* verification is attempted, so it's single-use whether the attempt succeeds or fails.
+* The first draft had several bugs I only found by actually running it instead of reading it — missing imports, a malformed `rp_id`, and a challenge that only invalidated on success. Tested the failure paths against the real API and the real database, not just the happy path.
+* Registered a real passkey through a real browser and confirmed the credential row landed in Postgres.
+
+---
+
+### 📅 10/8/2026
+
+* Added passkey login: `POST /webauthn/login/options` and `/verify`. Neither needs a session (they're how you get one) and both end by issuing the same JWT as password login, so the rest of the app can't tell which path a user came in through.
+* Every failure path returns the same `401 "Invalid email or password"` — unknown account, no passkeys, expired challenge, failed verification — so responses never reveal whether an account or passkey exists.
+* An end-to-end browser test caught a real bug the unit-level checks couldn't: the options endpoints asked for user verification as merely "preferred" while the verify endpoints required it, so valid authenticators were being rejected. Both sides now agree.
+* That failure was nearly invisible because the verify endpoints swallowed the underlying exception. They now log the real reason server-side while still returning a generic message to the client.
+
+---
+
+### 📅 10/9/2026
+
+* Added passkey management to the account page: list your passkeys, add one, remove one. Backed by `GET` and `DELETE /webauthn/credentials`.
+* The list endpoint returns an allow-list of fields only (never the public key or credential id), and delete is scoped to the owner — another user's passkey gets the same `404` as one that doesn't exist, so ids can't be probed.
 
 ---
 
@@ -143,9 +172,20 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 ---
 
+## 🚧 Work in Progress
+
+* **Passkey sign-in on the login page** — the backend and the account-page management are done; the login UI that uses them is next
+* **Automated tests for the passkey flow** — so far it's been proven by hand against a real browser and a real database, which isn't a substitute for a regression suite
+
+---
+
 ## ⚙️ Upcoming Project Features
 
 * Rate limiting on auth endpoints
+* An MCP server, so AI assistants can search cards and build decks in a user's account
+* Semantic card search (pgvector) for finding cards that function alike
+* Observability — error tracking and product analytics
+* A scheduled job for the Union Arena card import instead of a manual script
 * Open Graph previews for shareable profile links
 * Dedicated mobile pass
 
