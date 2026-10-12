@@ -182,7 +182,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 ## ⚙️ Upcoming Project Features
 
 * Rate limiting on auth endpoints
-* An MCP server, so AI assistants can search cards and build decks in a user's account
+* An MCP server, so AI assistants can search cards and build decks in a user's account (Meta analysis or deck building)
 * Semantic card search (pgvector) for finding cards that function alike
 * Observability — error tracking and product analytics
 * A scheduled job for the Union Arena card import instead of a manual script
