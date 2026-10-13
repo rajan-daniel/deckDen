@@ -14,6 +14,7 @@ type AuthContextType = {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 };
@@ -48,15 +49,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // The one place a session gets established, whichever sign-in method
+  // produced the token (password or passkey).
+  async function loginWithToken(newToken: string) {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    await fetchCurrentUser(newToken);
+  }
+
   async function login(email: string, password: string) {
     const result = await apiFetch<{ access_token: string; token_type: string }>("/login", {
       method: "POST",
       body: { email, password },
     });
 
-    localStorage.setItem("token", result.access_token);
-    setToken(result.access_token);
-    await fetchCurrentUser(result.access_token);
+    await loginWithToken(result.access_token);
   }
 
   async function signup(username: string, email: string, password: string) {
@@ -74,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithToken, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

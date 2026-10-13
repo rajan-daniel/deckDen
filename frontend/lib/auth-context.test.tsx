@@ -7,13 +7,14 @@ function mockFetchOnce(response: Partial<Response> & { json?: () => Promise<unkn
 }
 
 function TestConsumer() {
-  const { user, isLoading, login, logout } = useAuth();
+  const { user, isLoading, login, loginWithToken, logout } = useAuth();
 
   if (isLoading) return <div>loading</div>;
   return (
     <div>
       <div data-testid="user">{user ? user.username : "anonymous"}</div>
       <button onClick={() => login("alice@example.com", "hunter2222")}>login</button>
+      <button onClick={() => loginWithToken("passkey-token")}>login with token</button>
       <button onClick={logout}>logout</button>
     </div>
   );
@@ -85,6 +86,51 @@ describe("AuthProvider", () => {
 
     await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("alice"));
     expect(localStorage.getItem("token")).toBe("new-token");
+  });
+
+  it("loginWithToken stores the token and loads the user, without calling /login", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 1, username: "alice", email: "a@x.com" }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("anonymous"));
+
+    await act(async () => {
+      screen.getByText("login with token").click();
+    });
+
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("alice"));
+    expect(localStorage.getItem("token")).toBe("passkey-token");
+    // The only request is the /me lookup that validates the token.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/me$/);
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer passkey-token");
+  });
+
+  it("loginWithToken ends up anonymous with the token cleared when /me rejects it", async () => {
+    mockFetchOnce({ ok: false, status: 401, json: async () => ({ detail: "Invalid authentication token" }) });
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("anonymous"));
+
+    await act(async () => {
+      screen.getByText("login with token").click();
+    });
+
+    // Documents current behavior: fetchCurrentUser swallows the failure rather
+    // than throwing, so loginWithToken resolves but no session is established.
+    await waitFor(() => expect(localStorage.getItem("token")).toBeNull());
+    expect(screen.getByTestId("user")).toHaveTextContent("anonymous");
   });
 
   it("logout clears the token and the user", async () => {

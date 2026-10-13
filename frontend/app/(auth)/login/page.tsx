@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { authenticateWithPasskey, passkeyErrorMessage } from "@/lib/passkeys";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithToken } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasskeySubmitting, setIsPasskeySubmitting] = useState(false);
+  // Browser-only capability: server snapshot is `true` so SSR and first paint match.
+  const passkeysSupported = useSyncExternalStore(
+    () => () => {},
+    browserSupportsWebAuthn,
+    () => true
+  );
+  const busy = isSubmitting || isPasskeySubmitting;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +41,21 @@ export default function LoginPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleSignInPasskey() {
+    setError(null);
+    setIsPasskeySubmitting(true);
+
+    try {
+      const token = await authenticateWithPasskey(email);
+      await loginWithToken(token);
+      router.push("/");
+    } catch (err) {
+      setError(passkeyErrorMessage(err));
+    } finally {
+      setIsPasskeySubmitting(false);
     }
   }
 
@@ -65,11 +90,29 @@ export default function LoginPage() {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={busy}
             className="btn-primary py-2.5 mt-1"
           >
             {isSubmitting ? "Logging in..." : "Log in"}
           </button>
+          {passkeysSupported && (
+            <>
+              <div className="flex items-center gap-3 text-xs text-neutral-500">
+                <span className="flex-1 border-t border-neutral-800" />
+                or
+                <span className="flex-1 border-t border-neutral-800" />
+              </div>
+              {/* type="button" so this skips the form's required password check. */}
+              <button
+                type="button"
+                onClick={handleSignInPasskey}
+                disabled={busy || !email.trim()}
+                className="btn-secondary"
+              >
+                {isPasskeySubmitting ? "Waiting for your device..." : "Sign in with a passkey"}
+              </button>
+            </>
+          )}
         </form>
         <p className="text-sm text-neutral-400 mt-6 text-center">
           Don&apos;t have an account?{" "}
