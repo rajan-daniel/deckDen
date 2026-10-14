@@ -33,7 +33,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * 🏷️ Optional play style tags (Competitive, Meta, Casual, Fun, Beginner, Advanced, Budget, Test)
 * 🔐 Secure authentication — hashed passwords, JWT sessions
 * ✉️ Self-service password reset via email
-* 🔑 Passkey (WebAuthn) support — add, list, and remove passkeys from the account page, alongside password login (passkey sign-in on the login page is next)
+* 🔑 Passkeys (WebAuthn) — sign in with your device's fingerprint, face, or PIN alongside password login, and add or remove passkeys from your account page
 * 🗑️ Self-service account deletion, with data actually cleaned up behind it
 * 🔎 Click-to-zoom card focus view, sized consistently across games
 * 📱 Fully responsive, consistent dark-themed design system
@@ -43,7 +43,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 
 ## 📍 The Process
 
-DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and is now growing passkey support.
+DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and has recently gained passkey sign-in, built as an addition to password login rather than a replacement.
 
 Rather than summarizing the process after the fact, the timeline below walks through how it actually came together — kept as short, in-the-moment notes rather than a polished retrospective, so the real decisions, bugs, and milestones stay visible instead of getting smoothed over.
 
@@ -164,18 +164,46 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 
 ---
 
+### 📅 10/13/2026
+
+* Added "Sign in with a passkey" to the login page, alongside the password form rather than replacing it.
+* Extracted a single `loginWithToken` session path in the auth context so password and passkey sign-in end in the same place. The existing password-login tests passed unchanged before I added anything new, which is how I knew the refactor didn't change behavior.
+* Kept the passkey ceremony in a small `lib/passkeys.ts` helper (same pattern as `card-apis.ts`) instead of in the page or the auth provider, so it can be unit-tested without a browser and the provider doesn't have to import a browser-only API.
+* The ticket asked for a "clear error" when an account has no passkey, but that conflicts with a decision made earlier in the backend: unknown account, no passkeys, and failed verification all return the same `401`, so responses never reveal whether an account exists. I kept the security behavior, wrote the UI message to match ("We couldn't sign you in with a passkey…"), and corrected the ticket instead of weakening the code.
+
+---
+
+### 📅 10/14/2026
+
+* Added automated tests for the whole passkey flow: 35 backend tests (pytest) and 10 frontend tests (Vitest). Together with the existing suites, CI now runs 89 backend and 48 frontend tests on every pull request.
+* The only thing faked is the library's own verify call, because a real attestation can only come from a browser's authenticator. Everything of mine around it runs for real: the challenge lifecycle, ownership checks, the identical-401 behavior, encoding, sign-count updates, and the session that comes back. The cryptography itself is covered by real-browser runs instead.
+* A passing test proves little, so I checked the tests by breaking the code on purpose: 21 deliberate bugs in throwaway copies, each one caught. They included re-introducing a hardcoded relying-party id and the account-existence leak. The same check also exposed one of my early tests that passed without actually asserting anything.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
 
-What started as a basic deck CRUD app grew into a complete account system with real security considerations — hashed passwords, single-use reset tokens, cascading deletes, environment-scoped CORS — while staying focused on the one thing it's actually for: tracking what you play, across every game, under one name.
+What started as a basic deck CRUD app grew into a complete account system with real security considerations — hashed passwords, single-use reset tokens, passkey sign-in with single-use challenges, cascading deletes, environment-scoped CORS — while staying focused on the one thing it's actually for: tracking what you play, across every game, under one name.
 
 ---
 
 ## 🚧 Work in Progress
 
-* **Passkey sign-in on the login page** — the backend and the account-page management are done; the login UI that uses them is next
-* **Automated tests for the passkey flow** — so far it's been proven by hand against a real browser and a real database, which isn't a substitute for a regression suite
+**In progress**
+
+* **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
+
+**Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
+
+* Sweep expired, unused passkey challenges. They're single-use and short-lived, but abandoned prompts leave rows behind.
+* Store each passkey's transport hints so browsers show the right device prompt instead of a generic one.
+* Switch the older WebAuthn endpoints from `async def` to `def`: they make blocking database calls, which stalls the event loop.
+* Config hardening: fail loudly when `DATABASE_URL` is missing instead of falling back to a hardcoded default, document every environment variable in an `.env.example`, and publish the local Postgres port on `localhost` only.
+* `fetchCurrentUser` swallows failures, so a sign-in can resolve without a session being established. It's left as is for now to keep the passkey refactor behavior-neutral, and it's pinned down by a test.
+* A browser-level end-to-end test using a virtual authenticator, to automate the one path the unit tests deliberately don't cover.
+* Backfill tests for public profile listing and Union Arena search.
 
 ---
 
