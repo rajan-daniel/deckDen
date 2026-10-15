@@ -48,3 +48,27 @@ def hash_reset_token(token: str) -> str:
     plain SHA-256 hash is the right tool: fast, deterministic, and still
     means a leaked database doesn't hand out usable reset links."""
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+# --- Personal access tokens (read-only credentials for AI assistants) ---
+
+PAT_PREFIX = "dd_pat_"
+# The prefix plus a few random characters: enough for a user to tell their
+# tokens apart in a list, nowhere near enough to guess one.
+PAT_DISPLAY_LENGTH = len(PAT_PREFIX) + 4
+# A token expires after this long without being used...
+PAT_IDLE_DAYS = 90
+# ...but never lives longer than this in total, however often it's used.
+PAT_MAX_LIFETIME_DAYS = 365
+
+
+def generate_pat() -> str:
+    """The fixed prefix makes a leaked token recognizable to secret scanners."""
+    return PAT_PREFIX + secrets.token_urlsafe(32)
+
+
+def hash_pat(token: str) -> str:
+    """Same reasoning as hash_reset_token: the token is already random and
+    high-entropy, so plain SHA-256 is right, and a leaked database doesn't
+    hand out usable tokens."""
+    return hashlib.sha256(token.encode()).hexdigest()

@@ -12,10 +12,20 @@ from app.security import (
     create_access_token,
     generate_reset_token,
     hash_reset_token,
+    generate_pat,
+    hash_pat,
+    PAT_PREFIX,
+    PAT_DISPLAY_LENGTH,
+    PAT_IDLE_DAYS,
+    PAT_MAX_LIFETIME_DAYS,
     SECRET_KEY,
 )
 
 RESET_TOKEN_EXPIRE_MINUTES = 30
+MAX_ACTIVE_PATS_PER_USER = 10
+# Refresh a token's last_used_at / idle expiry at most this often, so a busy
+# assistant doesn't cause a database write on every single request.
+PAT_USAGE_UPDATE_INTERVAL = timedelta(minutes=5)
 
 Base.metadata.create_all(bind=engine)
 
@@ -101,6 +111,11 @@ def confirm_password_reset(payload: schemas.PasswordResetConfirm, db: Session = 
 
     user.hashed_password = hash_password(payload.new_password)
     reset_token.used_at = datetime.now(timezone.utc)
+    # A reset suggests the account may have been compromised, so disconnect
+    # every AI assistant; the user can reconnect the ones they trust.
+    db.query(models.PersonalAccessToken).filter(
+        models.PersonalAccessToken.user_id == user.id
+    ).delete()
     db.commit()
 
     return {"message": "Password updated"}
@@ -135,8 +150,55 @@ def get_current_user(
 
     return user
 
+def get_current_user_or_token(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """Like get_current_user, but also accepts a personal access token.
+
+    This is deliberately a SEPARATE dependency, used only on an explicit
+    allow-list of read-only endpoints. Everything else keeps get_current_user,
+    which rejects personal access tokens, so a token handed to an AI assistant
+    can never delete the account, manage passkeys, or create more tokens."""
+    if not token.startswith(PAT_PREFIX):
+        return get_current_user(token=token, db=db)
+
+    pat = db.query(models.PersonalAccessToken).filter(
+        models.PersonalAccessToken.token_hash == hash_pat(token)
+    ).first()
+
+    # An unrecognized token gets the same generic error as a bad JWT.
+    if pat is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    now = datetime.now(timezone.utc)
+
+    # Only someone holding the real token can ever reach this message, so being
+    # specific leaks nothing, and it's what the assistant will show the user.
+    if pat.expires_at <= now:
+        raise HTTPException(
+            status_code=401,
+            detail="This access token has expired. Reconnect your assistant in your account settings.",
+        )
+
+    # Idle expiry: using the token pushes its expiry out, never past the
+    # absolute lifetime cap. Throttled so it isn't a write on every request.
+    if pat.last_used_at is None or now - pat.last_used_at >= PAT_USAGE_UPDATE_INTERVAL:
+        pat.last_used_at = now
+        pat.expires_at = min(
+            now + timedelta(days=PAT_IDLE_DAYS),
+            pat.created_at + timedelta(days=PAT_MAX_LIFETIME_DAYS),
+        )
+        db.commit()
+
+    user = db.query(models.User).filter(models.User.id == pat.user_id).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
+
 @app.get("/me", response_model=schemas.UserResponse)
-def get_me(current_user: models.User = Depends(get_current_user)):
+def get_me(current_user: models.User = Depends(get_current_user_or_token)):
     return current_user
 
 @app.delete("/me")
@@ -183,7 +245,7 @@ def _deck_summary(deck: models.Deck) -> models.Deck:
 @app.get("/me/decks", response_model=list[schemas.DeckSummaryResponse])
 def get_my_decks(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user_or_token)
 ):
     decks = db.query(models.Deck).options(
         joinedload(models.Deck.owner), selectinload(models.Deck.cards)
@@ -194,7 +256,7 @@ def get_my_decks(
 def get_my_deck(
     deck_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user_or_token)
 ):
     deck = db.query(models.Deck).filter(
         models.Deck.id == deck_id,
@@ -780,3 +842,86 @@ def delete_my_passkey(
     return {"message": "Passkey removed"}
 #webauthn Manage end
 #end of webauthn
+# PERSONAL ACCESS TOKENS (read-only credentials for AI assistants)
+# These endpoints use get_current_user, not get_current_user_or_token: only a
+# real login session can create, list, or disconnect tokens.
+@app.post("/me/tokens", response_model=schemas.PersonalAccessTokenCreated)
+def create_my_token(
+    payload: schemas.PersonalAccessTokenCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Give this connection a name.")
+
+    now = datetime.now(timezone.utc)
+
+    # Expired tokens are dead weight: clear them out, and don't let them count
+    # against the cap.
+    db.query(models.PersonalAccessToken).filter(
+        models.PersonalAccessToken.user_id == current_user.id,
+        models.PersonalAccessToken.expires_at <= now,
+    ).delete()
+
+    active = db.query(models.PersonalAccessToken).filter(
+        models.PersonalAccessToken.user_id == current_user.id
+    ).count()
+    if active >= MAX_ACTIVE_PATS_PER_USER:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You can have at most {MAX_ACTIVE_PATS_PER_USER} connected assistants. Disconnect one first.",
+        )
+
+    token = generate_pat()
+    pat = models.PersonalAccessToken(
+        user_id=current_user.id,
+        name=name,
+        token_hash=hash_pat(token),
+        token_prefix=token[:PAT_DISPLAY_LENGTH],
+        scope="read",
+        expires_at=now + timedelta(days=PAT_IDLE_DAYS),
+    )
+    db.add(pat)
+    db.commit()
+    db.refresh(pat)
+
+    # The one and only time the plaintext exists. Not a column: it's attached
+    # for the response, same idea as _deck_summary above.
+    pat.token = token
+    return pat
+
+@app.get("/me/tokens", response_model=list[schemas.PersonalAccessTokenResponse])
+def list_my_tokens(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    return (
+        db.query(models.PersonalAccessToken)
+        .filter(models.PersonalAccessToken.user_id == current_user.id)
+        .order_by(
+            models.PersonalAccessToken.created_at.desc(),
+            models.PersonalAccessToken.id.desc(),
+        )
+        .all()
+    )
+
+@app.delete("/me/tokens/{token_id}")
+def disconnect_my_token(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    # Filter by id AND owner. Someone else's token gets the same 404 as one
+    # that doesn't exist, so the response never confirms which ids are real.
+    pat = db.query(models.PersonalAccessToken).filter(
+        models.PersonalAccessToken.id == token_id,
+        models.PersonalAccessToken.user_id == current_user.id,
+    ).first()
+
+    if pat is None:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    db.delete(pat)
+    db.commit()
+    return {"message": "Disconnected"}
