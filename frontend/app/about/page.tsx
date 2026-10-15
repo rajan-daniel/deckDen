@@ -80,8 +80,8 @@ export default function AboutPage() {
 
         <h2>Supported games</h2>
         <p>
-          DeckDen currently supports three games, each with its own card
-          search hooked up to a real card database:
+          DeckDen currently supports {GAMES.length} games, each with its own
+          card search hooked up to a real card database:
         </p>
         <ul>
           {GAMES.map((game) => (

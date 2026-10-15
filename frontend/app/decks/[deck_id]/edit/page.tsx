@@ -7,6 +7,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
 import { Loading } from "@/app/components/loading";
 import { PLAY_STYLES } from "@/lib/deck-options";
+import { GAMES } from "@/lib/games";
 
 type Game = "Union Arena" | "Yu-Gi-Oh!" | "Pokemon";
 
@@ -91,6 +92,12 @@ function EditDeckForm() {
     return null;
   }
 
+  // Enabled games only, plus the deck's current game if it has been paused, so
+  // an existing deck still shows its own game and can be edited without
+  // silently switching it.
+  const gameOptions: string[] = GAMES.map((g) => g.name);
+  if (!gameOptions.includes(game)) gameOptions.push(game);
+
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-md card-surface p-8">
@@ -110,9 +117,11 @@ function EditDeckForm() {
             onChange={(e) => setGame(e.target.value as Game)}
             className="input-field"
           >
-            <option value="Yu-Gi-Oh!">Yu-Gi-Oh!</option>
-            <option value="Pokemon">Pokemon</option>
-            <option value="Union Arena">Union Arena</option>
+            {gameOptions.map((gameName) => (
+              <option key={gameName} value={gameName}>
+                {gameName}
+              </option>
+            ))}
           </select>
 
           <select

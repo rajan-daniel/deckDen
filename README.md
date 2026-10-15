@@ -26,7 +26,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 
 ## 🚀 Features
 
-* 🎴 Build and save decklists across Yu-Gi-Oh!, Pokémon, and Union Arena
+* 🎴 Build and save decklists across Yu-Gi-Oh! and Union Arena (Pokémon is temporarily paused while card lookups are too slow on the free-tier backend — existing decks are untouched, and it's a one-line switch in `frontend/lib/games.ts` to bring it back)
 * 🔍 Live card search pulled straight from each game's real card database
 * 🌐 Public profiles that show everything a player builds across every game, not just one
 * 🔒 Public or private visibility, set per deck
