@@ -20,8 +20,11 @@ export default function Home() {
           className="mt-5 max-w-xl text-neutral-400 text-lg animate-fade-in-up"
           style={{ animationDelay: "120ms" }}
         >
-          DeckDen is where you build, browse, and share decks across
-          Yu-Gi-Oh!, Pokémon, and Union Arena — all in one clean, fast place.
+          DeckDen is where you build, browse, and share decks across{" "}
+          {new Intl.ListFormat("en", { type: "conjunction" }).format(
+            GAMES.map((g) => g.name)
+          )}{" "}
+          — all in one clean, fast place.
         </p>
 
         <div
