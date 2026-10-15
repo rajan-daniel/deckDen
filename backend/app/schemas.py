@@ -119,3 +119,24 @@ class WebAuthnCredentialResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PersonalAccessTokenCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+
+class PersonalAccessTokenResponse(BaseModel):
+    """A token as the account page lists it. Never includes the token itself
+    or its hash."""
+    id: int
+    name: str
+    token_prefix: str
+    scope: str
+    created_at: datetime
+    last_used_at: datetime | None
+    expires_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class PersonalAccessTokenCreated(PersonalAccessTokenResponse):
+    """Returned once, at creation: the only time the plaintext token exists."""
+    token: str

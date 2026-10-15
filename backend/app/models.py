@@ -16,6 +16,7 @@ class User(Base):
     reset_tokens = relationship("PasswordResetToken", cascade="all, delete-orphan")
     webauthn_credentials = relationship("WebAuthnCredential", cascade="all, delete-orphan")
     webauthn_challenges = relationship("WebAuthnChallenge", cascade="all, delete-orphan")
+    access_tokens = relationship("PersonalAccessToken", cascade="all, delete-orphan")
 
 class Deck(Base):
     __tablename__ = "decks"
@@ -87,6 +88,21 @@ class WebAuthnChallenge(Base):
     expires_at = Column(TZDateTime, nullable=False)
     used_at = Column(TZDateTime, nullable=True)
     created_at = Column(TZDateTime, server_default=func.now())
+
+class PersonalAccessToken(Base):
+    """A long-lived, read-only credential a user hands to an AI assistant.
+    Only the SHA-256 hash is stored; the token itself is shown once, at creation."""
+    __tablename__ = "personal_access_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)  # label such as "Claude Desktop"
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    token_prefix = Column(String, nullable=False)  # first few characters, display only
+    scope = Column(String, nullable=False, default="read")
+    created_at = Column(TZDateTime, server_default=func.now())
+    last_used_at = Column(TZDateTime, nullable=True)
+    expires_at = Column(TZDateTime, nullable=False)
 
 class UnionArenaCard(Base):
     __tablename__ = "union_arena_cards"
