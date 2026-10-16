@@ -8,7 +8,9 @@ import {
 } from "@simplewebauthn/browser";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
+import { formatDate } from "@/lib/format-date";
 import { ProtectedRoute } from "@/app/components/protected-route";
+import { AccessTokenSettings } from "./access-token-settings";
 
 type Passkey = {
   id: number;
@@ -16,14 +18,6 @@ type Passkey = {
   created_at: string;
   last_used_at: string | null;
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function PasskeySettings({ token }: { token: string | null }) {
   const [passkeys, setPasskeys] = useState<Passkey[] | null>(null);
@@ -207,6 +201,8 @@ function AccountSettings() {
       </p>
 
       <PasskeySettings token={token} />
+
+      <AccessTokenSettings token={token} />
 
       <div className="card-surface p-6 border-red-500/30">
         <h2 className="text-lg font-medium text-red-400 mb-1">Danger zone</h2>
