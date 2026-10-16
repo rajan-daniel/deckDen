@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output and test reports
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets: the access token lives here, never in git.
+# Repeats the root .gitignore on purpose so this folder stays safe if it is ever split out.
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
