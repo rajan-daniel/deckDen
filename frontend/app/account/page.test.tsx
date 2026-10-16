@@ -39,6 +39,8 @@ function backend(overrides: Record<string, (opts: { body?: unknown; token?: stri
     const key = `${opts.method ?? "GET"} ${path}`;
     if (overrides[key]) return overrides[key](opts);
     if (key === "GET /webauthn/credentials") return [...passkeys];
+    // The AI assistants section loads its own list; these tests don't exercise it.
+    if (key === "GET /me/tokens") return [];
     throw new Error(`unexpected request: ${key}`);
   });
 }
@@ -72,7 +74,11 @@ describe("account page: passkey list", () => {
   });
 
   it("shows an error, and still offers Add, when the list can't be loaded", async () => {
-    apiFetch.mockRejectedValue(new ApiError(500, "Server exploded"));
+    backend({
+      "GET /webauthn/credentials": () => {
+        throw new ApiError(500, "Server exploded");
+      },
+    });
     render(<AccountPage />);
 
     expect(await screen.findByText("Server exploded")).toBeInTheDocument();
