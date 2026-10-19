@@ -9,7 +9,7 @@ A local [MCP](https://modelcontextprotocol.io) server that will let a user's AI 
 - Created the `mcp-server/` folder at the repo root, next to `backend/` and `frontend/`, with its own `package.json`, `tsconfig.json`, `.nvmrc` and `.gitignore`.
 - TypeScript in strict mode, compiled to ESM for Node (`NodeNext`), output in `dist/`.
 - Node 24 (see `.nvmrc`).
-- Installed the MCP SDK (`@modelcontextprotocol/sdk` 1.32.1) and `zod` 4.6.7 at exact versions. zod will validate the arguments an assistant sends to a tool.
+- Installed the v2 MCP SDK (`@modelcontextprotocol/server` 2.3.1) and `zod` 4.6.7 at exact versions. zod describes and validates the arguments an assistant sends to a tool.
 - `@types/node` is pinned to 24 to match the Node version.
 - `.gitignore` covers `node_modules/`, `dist/`, `coverage/` and `.env` files, so a token can't be committed by accident.
 
@@ -27,12 +27,12 @@ npm run typecheck
 
 ## Planned
 
-- **v1 tools** (final list still being decided): get my profile, list my decks, get one deck. These only use the endpoints an access token is allowed to reach: `GET /me`, `GET /me/decks` and `GET /me/decks/{deck_id}`.
+- **Tools (v1):** `list_my_decks` and `get_deck`. They call `GET /me/decks` and `GET /me/decks/{deck_id}`, which an access token is allowed to reach. The server only passes on the fields the assistant needs: no email, no image URLs, no owner info.
 - **Card tools** ("how does this card work?", "how do I play this deck?") need card effect text, which DeckDen doesn't store yet. That's a separate backend ticket (import card text and add a lookup endpoint).
-- **Configuration:** the API URL and the access token will come from environment variables (names to be decided). Never commit a token. If one leaks, disconnect it on the account page and make a new one.
+- **Configuration:** two environment variables, `DECKDEN_API_URL` and `DECKDEN_TOKEN`. The server will exit with a clear message if either is missing, and it will refuse a plain `http://` URL unless the host is localhost. Never commit a token. If one leaks, disconnect it on the account page and make a new one.
 
 ## Notes for development
 
 - The server will talk to the assistant over stdio, so **nothing may write to stdout** except the protocol. Use `console.error` for debug output.
 - Imports of our own files need the `.js` extension (for example `./client.js`), even though the source is `.ts`.
-- Register tools with `registerTool`. The older `server.tool()` is deprecated in this SDK version.
+- Build the server and register tools with `registerTool` inside the function passed to `serveStdio`. Give each tool an `inputSchema` written with zod, and keep it as strict as the real data (for example, a deck id is a whole number above 0).
