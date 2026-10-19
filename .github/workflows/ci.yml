@@ -69,3 +69,29 @@ jobs:
 
       - name: Run vitest
         run: npm test
+
+  mcp-server:
+    name: mcp-server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Single source of truth: mcp-server/.nvmrc (also read by nvm/fnm locally).
+          node-version-file: mcp-server/.nvmrc
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Run build
+        run: npm run build
