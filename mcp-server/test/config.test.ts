@@ -118,4 +118,90 @@ describe("loadConfig", () => {
 
     expect(config.apiUrl).toBe("https://api.example.com");
   });
+  //TOKEN LEAK TEST
+});
+
+describe("config errors never leak the token", () => {
+  // The "dd_pat_" prefix is public. Only the random part after it is secret.
+  const SECRET_BODY = "Zq9Xv7KpL2mW";
+  const SECRET = `dd_pat_${SECRET_BODY}`;
+  const WINDOW = 6;
+  const URL_OK = "https://api.example.com";
+
+  function messageOf(load: () => unknown): string {
+    try {
+      load();
+    } catch (error) {
+      return (error as Error).message;
+    }
+    throw new Error("expected loadConfig to throw, but it did not");
+  }
+
+  // The whole secret, plus every WINDOW-long piece of its random part,
+  // so a partial leak is caught too.
+  function leakedPieces(message: string): string[] {
+    const pieces = [SECRET];
+    for (let i = 0; i + WINDOW <= SECRET_BODY.length; i++) {
+      pieces.push(SECRET_BODY.slice(i, i + WINDOW));
+    }
+    return pieces.filter((piece) => message.includes(piece));
+  }
+
+  it("flags a message that leaks, and passes one that does not", () => {
+    expect(leakedPieces(`bad token ${SECRET}`)).not.toEqual([]);
+    expect(leakedPieces(`starts with ${SECRET_BODY.slice(0, 8)}`)).not.toEqual(
+      [],
+    );
+    expect(leakedPieces("DECKDEN_TOKEN is not set.")).toEqual([]);
+  });
+
+  const cases: Array<[string, Record<string, string | undefined>]> = [
+    [
+      "plain http URL, valid token",
+      { DECKDEN_API_URL: "http://api.example.com", DECKDEN_TOKEN: SECRET },
+    ],
+    [
+      "URL with no scheme, valid token",
+      { DECKDEN_API_URL: "api.example.com", DECKDEN_TOKEN: SECRET },
+    ],
+    [
+      "localhost with no scheme, valid token",
+      { DECKDEN_API_URL: "localhost:8000", DECKDEN_TOKEN: SECRET },
+    ],
+    [
+      "non-web URL scheme, valid token",
+      { DECKDEN_API_URL: "ftp://api.example.com", DECKDEN_TOKEN: SECRET },
+    ],
+    [
+      "URL with spaces, valid token",
+      { DECKDEN_API_URL: " https://api.example.com ", DECKDEN_TOKEN: SECRET },
+    ],
+    ["missing URL, valid token", { DECKDEN_TOKEN: SECRET }],
+    [
+      "token with a trailing newline",
+      { DECKDEN_API_URL: URL_OK, DECKDEN_TOKEN: `${SECRET}\n` },
+    ],
+    [
+      "token in quotes",
+      { DECKDEN_API_URL: URL_OK, DECKDEN_TOKEN: `"${SECRET}"` },
+    ],
+    [
+      "token with Bearer in front",
+      { DECKDEN_API_URL: URL_OK, DECKDEN_TOKEN: `Bearer ${SECRET}` },
+    ],
+    [
+      "another service's prefix",
+      { DECKDEN_API_URL: URL_OK, DECKDEN_TOKEN: `ghp_${SECRET_BODY}` },
+    ],
+    [
+      "token with an illegal character",
+      { DECKDEN_API_URL: URL_OK, DECKDEN_TOKEN: `${SECRET}.def` },
+    ],
+  ];
+
+  it.each(cases)("%s", (_label, env) => {
+    const message = messageOf(() => loadConfig(env));
+
+    expect(leakedPieces(message)).toEqual([]);
+  });
 });
