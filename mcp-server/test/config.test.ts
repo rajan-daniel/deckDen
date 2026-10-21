@@ -118,9 +118,9 @@ describe("loadConfig", () => {
 
     expect(config.apiUrl).toBe("https://api.example.com");
   });
-  //TOKEN LEAK TEST
 });
 
+//TOKEN LEAK TEST
 describe("config errors never leak the token", () => {
   // The "dd_pat_" prefix is public. Only the random part after it is secret.
   const SECRET_BODY = "Zq9Xv7KpL2mW";
