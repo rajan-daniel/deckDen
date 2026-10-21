@@ -17,6 +17,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * Docker
 * Resend (transactional email)
 * WebAuthn / passkeys (py_webauthn, @simplewebauthn/browser)
+* Model Context Protocol (MCP) SDK, zod
 * Render
 * Vercel
 * pytest
@@ -34,6 +35,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 * 🔐 Secure authentication — hashed passwords, JWT sessions
 * ✉️ Self-service password reset via email
 * 🔑 Passkeys (WebAuthn) — sign in with your device's fingerprint, face, or PIN alongside password login, and add or remove passkeys from your account page
+* 🤖 AI assistant access tokens — create a read-only token on your account page to let an AI assistant read your decks, and disconnect it any time
 * 🗑️ Self-service account deletion, with data actually cleaned up behind it
 * 🔎 Click-to-zoom card focus view, sized consistently across games
 * 📱 Fully responsive, consistent dark-themed design system
@@ -43,7 +45,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 
 ## 📍 The Process
 
-DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and has recently gained passkey sign-in, built as an addition to password login rather than a replacement.
+DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and gained passkey sign-in, built as an addition to password login rather than a replacement. The latest work is letting AI assistants read a player's decks: read-only access tokens, and an MCP server being built on top of them.
 
 Rather than summarizing the process after the fact, the timeline below walks through how it actually came together — kept as short, in-the-moment notes rather than a polished retrospective, so the real decisions, bugs, and milestones stay visible instead of getting smoothed over.
 
@@ -181,6 +183,34 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 
 ---
 
+### 📅 10/15/2026
+
+* Paused Pokémon: card lookups were too slow on the free-tier backend, so it's hidden from navigation and the deck picker behind a one-line flag in `lib/games.ts`. Existing Pokémon decks keep their colors and logos, and bringing it back is flipping `enabled`.
+* Added personal access tokens to the backend so an AI assistant can read a player's decks. They're read-only on purpose: a token works only on `GET /me`, `GET /me/decks` and `GET /me/decks/{id}`, and everything else still requires a login session.
+* A token is `dd_pat_` plus a random part, shown once, and only its SHA-256 hash is stored, the same approach as the password reset tokens. It expires after 90 days without use (capped at one year from creation), and a password reset disconnects every token.
+* Added the account page side: connect an assistant, see your tokens, disconnect one. A new token is shown once with a Copy button and lives only in component state.
+* CI now runs 111 backend and 68 frontend tests on every pull request.
+
+---
+
+### 📅 10/19/2026
+
+* Started the MCP server in `mcp-server/`, so an AI assistant like Claude Desktop can read a user's decks with one of those tokens. Learned the protocol and the MCP Inspector on a throwaway hello-world server before building the real one.
+* Settled the scope before writing code: v1 is two tools, `list_my_decks` and `get_deck`, and only passes on the fields an assistant needs. No email, no image URLs, no owner info. Card questions ("how does this card work?") wait on card effect text, which DeckDen doesn't store yet.
+* Scaffolded it as strict TypeScript (ESM, Node 24 via `.nvmrc`) with the v2 MCP SDK and zod at exact versions, and gave it its own `mcp-server` job in CI (typecheck and build).
+
+---
+
+### 📅 10/20/2026
+
+* Wrote the config reader test-first. It needs `DECKDEN_API_URL` and `DECKDEN_TOKEN`, fails loudly with a clear message if either is missing, and refuses a plain `http://` URL unless the host is localhost. A token with a trailing newline, quotes, or `Bearer ` in front is rejected rather than quietly cleaned up, because a silent fix would hide a setup mistake.
+* Added a test that no config error message ever contains the token. It checks the whole token and every 6-character piece of its random part, so a partial leak is caught too, and it has a positive control so the detector can't pass by being blind.
+* Added the response schema for the deck list: zod keeps only the fields the assistant needs and drops everything else the backend sends. My first draft required `format`, `play_style` and `description` to be strings, but the backend sends `null` when they're unset. A failing test showed it before the fix.
+* Checked these tests the same way as the passkey work, by breaking the code on purpose and confirming the right test goes red each time.
+* The `mcp-server` CI job now runs its tests too (40 so far). This is all on a branch and not merged yet.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -195,6 +225,8 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
+* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, and the schema for the deck list. Next: the schema for a full deck, the API client (a timeout, friendly errors for a bad token or an unreachable server, and the token never appearing in an error), then the two tools themselves with a smoke test that lists them.
+
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
 * Sweep expired, unused passkey challenges. They're single-use and short-lived, but abandoned prompts leave rows behind.
@@ -205,12 +237,17 @@ What started as a basic deck CRUD app grew into a complete account system with r
 * A browser-level end-to-end test using a virtual authenticator, to automate the one path the unit tests deliberately don't cover.
 * Backfill tests for public profile listing and Union Arena search.
 
+**Known follow-ups from the access-token work**
+
+* Pokémon is still paused. The backend and database have since moved to paid Render plans, so measure live search latency before switching it back on.
+* Mention access tokens in the Privacy Policy.
+
 ---
 
 ## ⚙️ Upcoming Project Features
 
 * Rate limiting on auth endpoints
-* An MCP server, so AI assistants can search cards and build decks in a user's account (Meta analysis or deck building)
+* MCP card tools and deck building, for meta analysis and building decks. The first MCP server only reads decks. Card questions need card effect text imported first, since DeckDen only stores each card's code, name and image, and building decks would need tokens that can write, which today's deliberately can't
 * Semantic card search (pgvector) for finding cards that function alike
 * Observability — error tracking and product analytics
 * A scheduled job for the Union Arena card import instead of a manual script
