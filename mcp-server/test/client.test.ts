@@ -29,3 +29,39 @@ describe("listMyDecks", () => {
     );
   });
 });
+
+// What the backend really sends for GET /me/decks (DeckSummaryResponse).
+const rawSummary = {
+  id: 7,
+  name: "Bleach Aggro",
+  game: "Union Arena",
+  format: "Standard",
+  play_style: "Aggro",
+  description: "Fast rush deck",
+  is_public: false,
+  owner_id: 3,
+  owner_username: "alice",
+  preview_image_url: "https://example.com/card.png",
+  card_count: 50,
+};
+
+describe("listMyDecks results", () => {
+  it("returns the decks with only the fields the assistant needs", async () => {
+    const client = createClient(config, fakeFetch(200, [rawSummary]));
+
+    const decks = await client.listMyDecks();
+
+    expect(decks).toEqual([
+      {
+        id: 7,
+        name: "Bleach Aggro",
+        game: "Union Arena",
+        format: "Standard",
+        play_style: "Aggro",
+        description: "Fast rush deck",
+        is_public: false,
+        card_count: 50,
+      },
+    ]);
+  });
+});
