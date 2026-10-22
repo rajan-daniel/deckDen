@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createClient } from "../src/client.js";
+import { ApiError, createClient } from "../src/client.js";
 
 const config = { apiUrl: "https://api.example.com", token: "dd_pat_abc123" };
 
@@ -140,4 +140,21 @@ describe("getMyDeck", () => {
       expect(fetchMock).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("errors", () => {
+  it("turns a 401 into an unauthorized ApiError with a friendly message", async () => {
+    const client = createClient(
+      config,
+      fakeFetch(401, { detail: "Invalid authentication token" }),
+    );
+
+    const error = await client.listMyDecks().catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("unauthorized");
+    expect(error.message).toBe(
+      "DeckDen didn't accept the token. Create a new one on your account page.",
+    );
+  });
 });
