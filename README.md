@@ -211,6 +211,17 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 
 ---
 
+### 📅 10/21/2026
+
+* Finished the response schemas with the full deck and its cards. The deck and the deck list share one set of common fields instead of each repeating them, so a field that both responses gain is added in one place. The card fields the backend can leave empty (`external_card_id`, `category`, `notes`) accept `null`, and the schema drops the ids and image URL the assistant doesn't need.
+* Kept `game` as a plain string on purpose. Pokémon decks still exist and still come back from the API even though the site hides Pokémon, and when a game is added to the backend, every copy of the server already installed on someone's machine shouldn't start failing for people who own a deck in it.
+* Started the API client. It takes the config and a `fetch` it can be handed, so the tests never touch the network. `listMyDecks()` and `getMyDeck(id)` send the token only in the `Authorization` header, and every response goes through the schemas, so only the allow-listed fields come out. `getMyDeck` rejects a bad id before sending anything.
+* The tests caught two of my own mistakes. My first `getMyDeck` parsed the response as a list, but that endpoint returns one deck. And a leftover `return` made the types fail while every test stayed green, which is why CI runs the typecheck as its own step.
+* Broke the code on purpose again: all five deck schema bugs were caught by the test I predicted. One of my own bugs landed on the wrong line and crashed the whole file, which showed me that a crash isn't evidence a test works.
+* The `mcp-server` suite is at 53 tests. Still on a branch.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -225,7 +236,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
-* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, and the schema for the deck list. Next: the schema for a full deck, the API client (a timeout, friendly errors for a bad token or an unreachable server, and the token never appearing in an error), then the two tools themselves with a smoke test that lists them.
+* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas for the deck list and a full deck, and the API client's two requests. Next: the client's error handling (a timeout, friendly errors for a bad token or an unreachable server, and the token never appearing in an error), then the two tools themselves with a smoke test that lists them.
 
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
