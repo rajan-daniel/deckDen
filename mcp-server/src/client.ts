@@ -21,16 +21,25 @@ export class ApiError extends Error {
 }
 
 export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
-  async function listMyDecks() {
-    const response = await fetchImpl(`${config.apiUrl}/me/decks`, {
+  // Sends an authenticated GET. Handles the errors every endpoint shares.
+  async function request(path: string): Promise<Response> {
+    const response = await fetchImpl(`${config.apiUrl}${path}`, {
       headers: { Authorization: `Bearer ${config.token}` },
     });
+
     if (response.status === 401) {
       throw new ApiError(
         "unauthorized",
         "DeckDen didn't accept the token. Create a new one on your account page.",
       );
     }
+
+    return response;
+  }
+
+  async function listMyDecks() {
+    const response = await request("/me/decks");
+
     const body = await response.json();
     return z.array(DeckSummarySchema).parse(body);
   }
@@ -39,20 +48,10 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     if (!Number.isSafeInteger(id) || id <= 0) {
       throw new RangeError("deck id must be a positive whole number");
     }
-    const response = await fetchImpl(`${config.apiUrl}/me/decks/${id}`, {
-      headers: { Authorization: `Bearer ${config.token}` },
-    });
-    if (response.status === 401) {
-      throw new ApiError(
-        "unauthorized",
-        "DeckDen didn't accept the token. Create a new one on your account page.",
-      );
-    }
+    const response = await request(`/me/decks/${id}`);
+
     if (response.status === 404) {
-      throw new ApiError(
-        "not_found",
-        "Deck not found.",
-      );
+      throw new ApiError("not_found", "Deck not found.");
     }
     const body = await response.json();
     return DeckSchema.parse(body);
