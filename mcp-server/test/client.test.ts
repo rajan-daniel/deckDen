@@ -65,3 +65,79 @@ describe("listMyDecks results", () => {
     ]);
   });
 });
+
+// What the backend really sends for GET /me/decks/{id} (DeckWithCardsResponse).
+const rawDeck = {
+  id: 7,
+  name: "Bleach Aggro",
+  game: "Union Arena",
+  format: "Standard",
+  play_style: "Aggro",
+  description: "Fast rush deck",
+  is_public: false,
+  owner_id: 3,
+  cards: [
+    {
+      id: 101,
+      deck_id: 7,
+      card_name: "Uryu Ishida",
+      external_card_id: "UE01ST/BLC-1-034",
+      image_url: "https://example.com/card.png",
+      quantity: 4,
+      category: "Character",
+      notes: "Main attacker",
+    },
+  ],
+};
+
+describe("getMyDeck", () => {
+  it("calls GET /me/decks/{id} with the token in the Authorization header", async () => {
+    const fetchMock = fakeFetch(200, rawDeck);
+    const client = createClient(config, fetchMock);
+
+    await client.getMyDeck(7);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.example.com/me/decks/7");
+    expect(new Headers(init?.headers).get("Authorization")).toBe(
+      "Bearer dd_pat_abc123",
+    );
+  });
+
+  it("returns the deck with only the fields the assistant needs", async () => {
+    const client = createClient(config, fakeFetch(200, rawDeck));
+
+    const deck = await client.getMyDeck(7);
+
+    expect(deck).toEqual({
+      id: 7,
+      name: "Bleach Aggro",
+      game: "Union Arena",
+      format: "Standard",
+      play_style: "Aggro",
+      description: "Fast rush deck",
+      is_public: false,
+      cards: [
+        {
+          card_name: "Uryu Ishida",
+          external_card_id: "UE01ST/BLC-1-034",
+          quantity: 4,
+          category: "Character",
+          notes: "Main attacker",
+        },
+      ],
+    });
+  });
+
+  it.each([0, -1, 1.5, Number.NaN])(
+    "rejects the id %s before making any request",
+    async (id) => {
+      const fetchMock = fakeFetch(200, rawDeck);
+      const client = createClient(config, fetchMock);
+
+      await expect(client.getMyDeck(id)).rejects.toThrow(RangeError);
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+});
