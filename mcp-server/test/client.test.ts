@@ -157,4 +157,17 @@ describe("errors", () => {
       "DeckDen didn't accept the token. Create a new one on your account page.",
     );
   });
+
+  it("turns a 404 into a not_found ApiError with a friendly message", async () => {
+    const client = createClient(
+      config,
+      fakeFetch(404, { detail: "Deck not found" }),
+    );
+
+    const error = await client.getMyDeck(7).catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("not_found");
+    expect(error.message).toBe("Deck not found.");
+  });
 });
