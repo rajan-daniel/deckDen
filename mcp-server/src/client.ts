@@ -12,7 +12,7 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
   }
 
   async function getMyDeck(id: number) {
-    if (!Number.isInteger(id) || id <= 0) {
+    if (!Number.isSafeInteger(id) || id <= 0) {
       throw new RangeError("deck id must be a positive whole number");
     }
     const response = await fetchImpl(`${config.apiUrl}/me/decks/${id}`, {

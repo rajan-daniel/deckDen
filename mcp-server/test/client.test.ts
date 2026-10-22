@@ -130,7 +130,7 @@ describe("getMyDeck", () => {
     });
   });
 
-  it.each([0, -1, 1.5, Number.NaN])(
+  it.each([0, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])(
     "rejects the id %s before making any request",
     async (id) => {
       const fetchMock = fakeFetch(200, rawDeck);
