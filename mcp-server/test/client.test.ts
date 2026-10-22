@@ -143,7 +143,7 @@ describe("getMyDeck", () => {
 });
 
 describe("errors", () => {
-  it("turns a 401 into an unauthorized ApiError with a friendly message", async () => {
+  it("listMyDecks turns a 401 into an unauthorized ApiError with a friendly message", async () => {
     const client = createClient(
       config,
       fakeFetch(401, { detail: "Invalid authentication token" }),
@@ -158,7 +158,7 @@ describe("errors", () => {
     );
   });
 
-  it("turns a 404 into a not_found ApiError with a friendly message", async () => {
+  it("getMyDeck turns a 404 into a not_found ApiError with a friendly message", async () => {
     const client = createClient(
       config,
       fakeFetch(404, { detail: "Deck not found" }),
@@ -169,5 +169,20 @@ describe("errors", () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.kind).toBe("not_found");
     expect(error.message).toBe("Deck not found.");
+  });
+
+  it("getMyDeck turns a 401 into an unauthorized ApiError with a friendly message", async () => {
+    const client = createClient(
+      config,
+      fakeFetch(401, { detail: "Invalid authentication token" }),
+    );
+
+    const error = await client.getMyDeck(7).catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("unauthorized");
+    expect(error.message).toBe(
+      "DeckDen didn't accept the token. Create a new one on your account page.",
+    );
   });
 });

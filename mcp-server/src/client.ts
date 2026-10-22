@@ -30,7 +30,7 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
         "unauthorized",
         "DeckDen didn't accept the token. Create a new one on your account page.",
       );
-    }   
+    }
     const body = await response.json();
     return z.array(DeckSummarySchema).parse(body);
   }
@@ -42,6 +42,12 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     const response = await fetchImpl(`${config.apiUrl}/me/decks/${id}`, {
       headers: { Authorization: `Bearer ${config.token}` },
     });
+    if (response.status === 401) {
+      throw new ApiError(
+        "unauthorized",
+        "DeckDen didn't accept the token. Create a new one on your account page.",
+      );
+    }
     if (response.status === 404) {
       throw new ApiError(
         "not_found",
