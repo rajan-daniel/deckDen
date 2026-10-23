@@ -67,6 +67,15 @@ function oddStatusFetch(status: number) {
   );
 }
 
+// A fake fetch that fails with exactly the error it is given.
+function rejectingFetch(error: Error) {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+      throw error;
+    },
+  );
+}
+
 describe("listMyDecks", () => {
   it("calls GET /me/decks with the token in the Authorization header", async () => {
     const fetchMock = fakeFetch(200, []);
@@ -426,5 +435,55 @@ describe("errors", () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.kind).toBe("bad_response");
     expect(error.message).toBe(unexpectedStatusMessage(404));
+  });
+
+  describe("errors never leak the token", () => {
+    // The "dd_pat_" prefix is public. Only the random part after it is secret.
+    const SECRET_BODY = "Zq9Xv7KpL2mW";
+    const SECRET = `dd_pat_${SECRET_BODY}`;
+    const WINDOW = 6;
+    const secretConfig = { apiUrl: "https://api.example.com", token: SECRET };
+
+    // The whole secret, plus every WINDOW-long piece of its random part,
+    // so a partial leak is caught too.
+    function leakedPieces(text: string): string[] {
+      const pieces = [SECRET];
+      for (let i = 0; i + WINDOW <= SECRET_BODY.length; i++) {
+        pieces.push(SECRET_BODY.slice(i, i + WINDOW));
+      }
+      return pieces.filter((piece) => text.includes(piece));
+    }
+
+    it("flags a message that leaks, and passes one that does not", () => {
+      expect(leakedPieces(`bad token ${SECRET}`)).not.toEqual([]);
+      expect(leakedPieces(`starts with ${SECRET_BODY.slice(0, 8)}`)).not.toEqual([]);
+      expect(leakedPieces("DeckDen didn't accept the token.")).toEqual([]);
+    });
+
+    // Every failure is built so that the body or the original error carries the secret.
+    const cases: Array<[string, typeof fetch]> = [
+      ["a 401 whose body echoes the token", fakeFetch(401, { detail: `Invalid ${SECRET}` })],
+      ["a 404 whose body echoes the token", fakeFetch(404, { detail: `Missing ${SECRET}` })],
+      ["a 500 whose body echoes the token", fakeFetch(500, { detail: `Crashed ${SECRET}` })],
+      ["a 403 whose body echoes the token", fakeFetch(403, { detail: `Forbidden ${SECRET}` })],
+      ["a reply that is not JSON and starts with the token", textFetch(200, `${SECRET_BODY} <html>`)],
+      ["JSON of the wrong shape that carries the token", fakeFetch(200, { token: SECRET })],
+      ["a network failure whose message holds the token", rejectingFetch(new TypeError(`failed ${SECRET}`))],
+      ["a timeout whose message holds the token", rejectingFetch(new DOMException(`timeout ${SECRET}`, "TimeoutError"))],
+      ["a body that stalls with the token in its message", brokenBodyFetch(new DOMException(`timeout ${SECRET}`, "TimeoutError"))],
+      ["a connection that drops with the token in its message", brokenBodyFetch(new TypeError(`terminated ${SECRET}`))],
+    ];
+
+    describe.each(endpoints)("%s", (_name, call) => {
+      it.each(cases)("%s", async (_label, fetchImpl) => {
+        const client = createClient(secretConfig, fetchImpl);
+
+        const error = await call(client).catch((e) => e);
+
+        expect(error).toBeInstanceOf(ApiError);
+        expect(leakedPieces(error.message)).toEqual([]);
+        expect(error.cause).toBeUndefined();
+      });
+    });
   });
 });
