@@ -55,6 +55,18 @@ function brokenBodyFetch(error: Error) {
   );
 }
 
+// A fake fetch for a status that only a misbehaving server sends (new Response refuses 600+).
+function oddStatusFetch(status: number) {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+      const response = new Response("{}", { status: 200 });
+      Object.defineProperty(response, "status", { value: status });
+      Object.defineProperty(response, "ok", { value: false });
+      return response;
+    },
+  );
+}
+
 describe("listMyDecks", () => {
   it("calls GET /me/decks with the token in the Authorization header", async () => {
     const fetchMock = fakeFetch(200, []);
@@ -227,7 +239,7 @@ describe("errors", () => {
     );
   });
 
-  it.each([500, 502, 503])(
+  it.each([500, 502, 503, 599])(
     "listMyDecks turns a %i into a server ApiError with a friendly message",
     async (status) => {
       const client = createClient(
@@ -245,7 +257,7 @@ describe("errors", () => {
     },
   );
 
-  it.each([500, 502, 503])(
+  it.each([500, 502, 503, 599])(
     "getMyDeck turns a %i into a server ApiError with a friendly message",
     async (status) => {
       const client = createClient(
@@ -376,5 +388,43 @@ describe("errors", () => {
       expect(error.kind).toBe("network");
       expect(error.message).toBe("Couldn't reach DeckDen at https://api.example.com.");
     });
+  });
+
+  const unexpectedStatusMessage = (status: number) =>
+    `DeckDen answered with an unexpected status (${status}).`;
+
+  describe.each(endpoints)("%s unexpected statuses", (_name, call) => {
+    it.each([302, 403, 429, 499])(
+      "turns a %i into a bad_response ApiError that names the status",
+      async (status) => {
+        const client = createClient(config, fakeFetch(status, { detail: "Something else" }));
+
+        const error = await call(client).catch((e) => e);
+
+        expect(error).toBeInstanceOf(ApiError);
+        expect(error.kind).toBe("bad_response");
+        expect(error.message).toBe(unexpectedStatusMessage(status));
+      },
+    );
+
+    it("turns a status above 599 into a bad_response ApiError that names the status", async () => {
+      const client = createClient(config, oddStatusFetch(600));
+
+      const error = await call(client).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("bad_response");
+      expect(error.message).toBe(unexpectedStatusMessage(600));
+    });
+  });
+
+  it("listMyDecks treats a 404 as an unexpected status", async () => {
+    const client = createClient(config, fakeFetch(404, { detail: "Not Found" }));
+
+    const error = await client.listMyDecks().catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("bad_response");
+    expect(error.message).toBe(unexpectedStatusMessage(404));
   });
 });

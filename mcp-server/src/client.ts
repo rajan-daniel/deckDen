@@ -57,7 +57,7 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
       );
     }
 
-    if (response.status >= 500) {
+    if (response.status >= 500 && response.status < 600) {
       throw new ApiError(
         "server",
         "DeckDen is having trouble. Try again shortly.",
@@ -67,8 +67,16 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     return response;
   }
 
-  // Reads the body and checks its shape. Anything unreadable becomes an ApiError.
+  // Checks the status is OK, reads the body and checks its shape.
+  // Anything else becomes an ApiError.
   async function readBody<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
+    if (!response.ok) {
+      throw new ApiError(
+        "bad_response",
+        `DeckDen answered with an unexpected status (${response.status}).`,
+      );
+    }
+
     let body: unknown;
     try {
       body = await response.json();
