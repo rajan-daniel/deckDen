@@ -32,6 +32,29 @@ function timedOutFetch() {
   );
 }
 
+// A fake fetch that answers with plain text instead of JSON.
+function textFetch(status: number, text: string) {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> =>
+      new Response(text, { status, headers: { "Content-Type": "text/html" } }),
+  );
+}
+
+// A fake fetch whose headers arrive fine but whose body fails while it is read.
+function brokenBodyFetch(error: Error) {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(error);
+          },
+        }),
+        { status: 200 },
+      ),
+  );
+}
+
 describe("listMyDecks", () => {
   it("calls GET /me/decks with the token in the Authorization header", async () => {
     const fetchMock = fakeFetch(200, []);
@@ -298,5 +321,60 @@ describe("errors", () => {
     const [, init] = fetchMock.mock.calls[0]!;
     expect(init?.signal).toBe(timeoutSpy.mock.results[0]!.value);
     timeoutSpy.mockRestore();
+  });
+
+  type Client = ReturnType<typeof createClient>;
+
+  const endpoints: [string, (client: Client) => Promise<any>][] = [
+    ["listMyDecks", (client) => client.listMyDecks()],
+    ["getMyDeck", (client) => client.getMyDeck(7)],
+  ];
+
+  const unreadableMessage =
+    "DeckDen sent a reply this server couldn't read. If it keeps happening, update the DeckDen MCP server.";
+
+  describe.each(endpoints)("%s reading the body", (_name, call) => {
+    it("turns a reply that is not JSON into a bad_response ApiError", async () => {
+      const client = createClient(config, textFetch(200, "<html>Bad Gateway</html>"));
+
+      const error = await call(client).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("bad_response");
+      expect(error.message).toBe(unreadableMessage);
+    });
+
+    it("turns JSON of the wrong shape into a bad_response ApiError", async () => {
+      const client = createClient(config, fakeFetch(200, { unexpected: true }));
+
+      const error = await call(client).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("bad_response");
+      expect(error.message).toBe(unreadableMessage);
+    });
+
+    it("turns a body that stalls into a timeout ApiError", async () => {
+      const stalled = new DOMException("The operation was aborted due to timeout", "TimeoutError");
+      const client = createClient(apiUrlWithPath, brokenBodyFetch(stalled));
+
+      const error = await call(client).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("timeout");
+      expect(error.message).toBe(
+        "DeckDen at https://api.example.com took too long to answer. Try again shortly.",
+      );
+    });
+
+    it("turns a connection that drops mid-body into a network ApiError", async () => {
+      const client = createClient(apiUrlWithPath, brokenBodyFetch(new TypeError("terminated")));
+
+      const error = await call(client).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("network");
+      expect(error.message).toBe("Couldn't reach DeckDen at https://api.example.com.");
+    });
   });
 });

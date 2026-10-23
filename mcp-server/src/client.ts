@@ -22,7 +22,22 @@ export class ApiError extends Error {
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
+const UNREADABLE_MESSAGE =
+  "DeckDen sent a reply this server couldn't read. If it keeps happening, update the DeckDen MCP server.";
+
 export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
+  // Turns whatever fetch (or reading a body) threw into an ApiError.
+  function toApiError(error: unknown): ApiError {
+    const origin = new URL(config.apiUrl).origin;
+    if (error instanceof Error && error.name === "TimeoutError") {
+      return new ApiError(
+        "timeout",
+        `DeckDen at ${origin} took too long to answer. Try again shortly.`,
+      );
+    }
+    return new ApiError("network", `Couldn't reach DeckDen at ${origin}.`);
+  }
+
   // Sends an authenticated GET. Handles the errors every endpoint shares.
   async function request(path: string): Promise<Response> {
     let response: Response;
@@ -32,14 +47,7 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
-      const origin = new URL(config.apiUrl).origin;
-      if (error instanceof Error && error.name === "TimeoutError") {
-        throw new ApiError(
-          "timeout",
-          `DeckDen at ${origin} took too long to answer. Try again shortly.`,
-        );
-      }
-      throw new ApiError("network", `Couldn't reach DeckDen at ${origin}.`);
+      throw toApiError(error);
     }
 
     if (response.status === 401) {
@@ -59,11 +67,28 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     return response;
   }
 
+  // Reads the body and checks its shape. Anything unreadable becomes an ApiError.
+  async function readBody<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new ApiError("bad_response", UNREADABLE_MESSAGE);
+      }
+      throw toApiError(error);
+    }
+
+    const result = schema.safeParse(body);
+    if (!result.success) {
+      throw new ApiError("bad_response", UNREADABLE_MESSAGE);
+    }
+    return result.data;
+  }
+
   async function listMyDecks() {
     const response = await request("/me/decks");
-
-    const body = await response.json();
-    return z.array(DeckSummarySchema).parse(body);
+    return readBody(response, z.array(DeckSummarySchema));
   }
 
   async function getMyDeck(id: number) {
@@ -75,8 +100,7 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     if (response.status === 404) {
       throw new ApiError("not_found", "Deck not found.");
     }
-    const body = await response.json();
-    return DeckSchema.parse(body);
+    return readBody(response, DeckSchema);
   }
 
   return { listMyDecks, getMyDeck };
