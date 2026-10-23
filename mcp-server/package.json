@@ -5,9 +5,10 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "24.19.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
   }
 }
