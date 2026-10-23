@@ -207,7 +207,7 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 * Added a test that no config error message ever contains the token. It checks the whole token and every 6-character piece of its random part, so a partial leak is caught too, and it has a positive control so the detector can't pass by being blind.
 * Added the response schema for the deck list: zod keeps only the fields the assistant needs and drops everything else the backend sends. My first draft required `format`, `play_style` and `description` to be strings, but the backend sends `null` when they're unset. A failing test showed it before the fix.
 * Checked these tests the same way as the passkey work, by breaking the code on purpose and confirming the right test goes red each time.
-* The `mcp-server` CI job now runs its tests too (40 so far). This is all on a branch and not merged yet.
+* The `mcp-server` CI job now runs its tests too (40 so far).
 
 ---
 
@@ -218,7 +218,19 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 * Started the API client. It takes the config and a `fetch` it can be handed, so the tests never touch the network. `listMyDecks()` and `getMyDeck(id)` send the token only in the `Authorization` header, and every response goes through the schemas, so only the allow-listed fields come out. `getMyDeck` rejects a bad id before sending anything.
 * The tests caught two of my own mistakes. My first `getMyDeck` parsed the response as a list, but that endpoint returns one deck. And a leftover `return` made the types fail while every test stayed green, which is why CI runs the typecheck as its own step.
 * Broke the code on purpose again: all five deck schema bugs were caught by the test I predicted. One of my own bugs landed on the wrong line and crashed the whole file, which showed me that a crash isn't evidence a test works.
-* The `mcp-server` suite is at 53 tests. Still on a branch.
+* The `mcp-server` suite is at 53 tests.
+
+---
+
+### 📅 10/22/2026
+
+* Finished the API client's error handling, test-first. Every failure now comes out as one `ApiError` with a kind (`unauthorized`, `not_found`, `server`, `network`, `timeout`, `bad_response`) and a fixed, friendly message. Nothing from the backend's response or from the original error is passed along, so a message can't carry the token or anything from a deck.
+* Both endpoints share one `request` function. I only extracted it after the 401 and 404 checks existed in both and had tests, so the tests could prove the refactor changed nothing. My first 404 check landed in the wrong function, and the test pointing at the right one failed at once, which is the case for having a single place.
+* A server-error check I wrote with `||` instead of `&&` was true for every status, so every request failed, yet my 500 test still passed. The rest of the suite caught it. A test for the case where a rule applies can't tell a correct rule from an always-true one; it needs cases where the rule must not apply.
+* Checked how `fetch` really fails against small throwaway servers instead of trusting memory. A stalled body fails later than the headers, a dropped connection is a `TypeError`, a status above 599 can come back (so the server-error range stops at 599, and any other unexpected status becomes a `bad_response` that names only the status), and a redirect to another host drops the `Authorization` header.
+* The 10 second timeout uses `AbortSignal.timeout`. Fake timers don't move it in Node, so one test checks the mapping with a fake that throws the same `TimeoutError` a real timeout does, and another checks the 10 second value and the signal that gets passed to `fetch`.
+* A test plants the token in response bodies and in the original errors, across ten kinds of failure and both endpoints, and checks that no 6-character piece of it reaches a message. It also checks the original error isn't kept as a `cause`, since logging an error would print it.
+* The `mcp-server` suite is at 110 tests, and I checked every step by breaking the code on purpose. One break survived on purpose: `!response.ok` against `status !== 200` only differs for 2xx statuses these endpoints never send, so I left it. The config reader, schemas and client are done; the two tools are next.
 
 ---
 
@@ -236,7 +248,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
-* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas for the deck list and a full deck, and the API client's two requests. Next: the client's error handling (a timeout, friendly errors for a bad token or an unreachable server, and the token never appearing in an error), then the two tools themselves with a smoke test that lists them.
+* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas for the deck list and a full deck, and the API client with its error handling (110 tests). Next: the two tools themselves, wiring the server to stdio, and a smoke test that lists them, then trying it in the MCP Inspector against my local backend with a real token.
 
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
@@ -252,6 +264,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * Pokémon is still paused. The backend and database have since moved to paid Render plans, so measure live search latency before switching it back on.
 * Mention access tokens in the Privacy Policy.
+* Upgrade Vitest in the frontend and `mcp-server` together. `npm audit` reports two moderate advisories in Vitest 4.1.11, in dev tooling only (the production dependencies are clean). The fix is a patch release outside the exact version pin, so it goes in with the upgrade.
 
 ---
 
