@@ -23,9 +23,17 @@ export class ApiError extends Error {
 export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
   // Sends an authenticated GET. Handles the errors every endpoint shares.
   async function request(path: string): Promise<Response> {
-    const response = await fetchImpl(`${config.apiUrl}${path}`, {
-      headers: { Authorization: `Bearer ${config.token}` },
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl(`${config.apiUrl}${path}`, {
+        headers: { Authorization: `Bearer ${config.token}` },
+      });
+    } catch {
+      throw new ApiError(
+        "network",
+        `Couldn't reach DeckDen at ${new URL(config.apiUrl).origin}.`,
+      );
+    }
 
     if (response.status === 401) {
       throw new ApiError(

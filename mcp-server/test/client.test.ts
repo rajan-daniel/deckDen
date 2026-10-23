@@ -14,6 +14,15 @@ function fakeFetch(status: number, body: unknown) {
   );
 }
 
+// A fake fetch that fails the way a real one does when it gets no response.
+function networkDownFetch() {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+      throw new TypeError("fetch failed");
+    },
+  );
+}
+
 describe("listMyDecks", () => {
   it("calls GET /me/decks with the token in the Authorization header", async () => {
     const fetchMock = fakeFetch(200, []);
@@ -221,4 +230,27 @@ describe("errors", () => {
       );
     },
   );
+
+  // The API URL has a path here so the message can only pass by naming the host alone.
+  const apiUrlWithPath = { ...config, apiUrl: "https://api.example.com/deckden" };
+
+  it("listMyDecks turns a network failure into a network ApiError that names the host", async () => {
+    const client = createClient(apiUrlWithPath, networkDownFetch());
+
+    const error = await client.listMyDecks().catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("network");
+    expect(error.message).toBe("Couldn't reach DeckDen at https://api.example.com.");
+  });
+
+  it("getMyDeck turns a network failure into a network ApiError that names the host", async () => {
+    const client = createClient(apiUrlWithPath, networkDownFetch());
+
+    const error = await client.getMyDeck(7).catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("network");
+    expect(error.message).toBe("Couldn't reach DeckDen at https://api.example.com.");
+  });
 });
