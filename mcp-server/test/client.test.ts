@@ -185,4 +185,40 @@ describe("errors", () => {
       "DeckDen didn't accept the token. Create a new one on your account page.",
     );
   });
+
+  it.each([500, 502, 503])(
+    "listMyDecks turns a %i into a server ApiError with a friendly message",
+    async (status) => {
+      const client = createClient(
+        config,
+        fakeFetch(status, { detail: "Internal Server Error" }),
+      );
+
+      const error = await client.listMyDecks().catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("server");
+      expect(error.message).toBe(
+        "DeckDen is having trouble. Try again shortly.",
+      );
+    },
+  );
+
+  it.each([500, 502, 503])(
+    "getMyDeck turns a %i into a server ApiError with a friendly message",
+    async (status) => {
+      const client = createClient(
+        config,
+        fakeFetch(status, { detail: "Internal Server Error" }),
+      );
+
+      const error = await client.getMyDeck(7).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.kind).toBe("server");
+      expect(error.message).toBe(
+        "DeckDen is having trouble. Try again shortly.",
+      );
+    },
+  );
 });

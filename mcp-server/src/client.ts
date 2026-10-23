@@ -34,6 +34,13 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
       );
     }
 
+    if (response.status >= 500) {
+      throw new ApiError(
+        "server",
+        "DeckDen is having trouble. Try again shortly.",
+      );
+    }
+
     return response;
   }
 
