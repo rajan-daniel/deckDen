@@ -20,6 +20,8 @@ export class ApiError extends Error {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 10_000;
+
 export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
   // Sends an authenticated GET. Handles the errors every endpoint shares.
   async function request(path: string): Promise<Response> {
@@ -27,12 +29,17 @@ export function createClient(config: Config, fetchImpl: typeof fetch = fetch) {
     try {
       response = await fetchImpl(`${config.apiUrl}${path}`, {
         headers: { Authorization: `Bearer ${config.token}` },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
-    } catch {
-      throw new ApiError(
-        "network",
-        `Couldn't reach DeckDen at ${new URL(config.apiUrl).origin}.`,
-      );
+    } catch (error) {
+      const origin = new URL(config.apiUrl).origin;
+      if (error instanceof Error && error.name === "TimeoutError") {
+        throw new ApiError(
+          "timeout",
+          `DeckDen at ${origin} took too long to answer. Try again shortly.`,
+        );
+      }
+      throw new ApiError("network", `Couldn't reach DeckDen at ${origin}.`);
     }
 
     if (response.status === 401) {

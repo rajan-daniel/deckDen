@@ -23,6 +23,15 @@ function networkDownFetch() {
   );
 }
 
+// A fake fetch that fails the way a real one does when AbortSignal.timeout fires.
+function timedOutFetch() {
+  return vi.fn(
+    async (_url: string | URL | Request, _init?: RequestInit): Promise<Response> => {
+      throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    },
+  );
+}
+
 describe("listMyDecks", () => {
   it("calls GET /me/decks with the token in the Authorization header", async () => {
     const fetchMock = fakeFetch(200, []);
@@ -252,5 +261,42 @@ describe("errors", () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.kind).toBe("network");
     expect(error.message).toBe("Couldn't reach DeckDen at https://api.example.com.");
+  });
+
+  it("listMyDecks turns a timeout into a timeout ApiError that names the host", async () => {
+    const client = createClient(apiUrlWithPath, timedOutFetch());
+
+    const error = await client.listMyDecks().catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("timeout");
+    expect(error.message).toBe(
+      "DeckDen at https://api.example.com took too long to answer. Try again shortly.",
+    );
+  });
+
+  it("getMyDeck turns a timeout into a timeout ApiError that names the host", async () => {
+    const client = createClient(apiUrlWithPath, timedOutFetch());
+
+    const error = await client.getMyDeck(7).catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.kind).toBe("timeout");
+    expect(error.message).toBe(
+      "DeckDen at https://api.example.com took too long to answer. Try again shortly.",
+    );
+  });
+
+  it("gives every request a 10 second timeout signal", async () => {
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+    const fetchMock = fakeFetch(200, []);
+    const client = createClient(config, fetchMock);
+
+    await client.listMyDecks();
+
+    expect(timeoutSpy).toHaveBeenCalledWith(10_000);
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(init?.signal).toBe(timeoutSpy.mock.results[0]!.value);
+    timeoutSpy.mockRestore();
   });
 });
