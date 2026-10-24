@@ -234,6 +234,19 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 
 ---
 
+### 📅 10/23/2026
+
+* Built the two MCP tools, `list_my_decks` and `get_deck`, and wired the server to stdio. Each handler is given the client as an argument, so the tests use a fake one with no network and no token. `src/server.ts` registers the tools and `src/index.ts` only reads the config, builds the client and starts serving.
+* A tool returns its data as compact JSON in one text block, with no output schema. The client's schemas already filter the data, and zod ignores unknown keys, so an output schema wouldn't reliably catch a leaked field. Instead, a test runs the real client on a raw backend reply that includes owner info and image URLs, and checks that none of it reaches the assistant.
+* Read the SDK's source and found it sends the message of anything a handler throws straight to the model. So every handler catches its own errors: an `ApiError` passes on its fixed message, and anything else becomes a generic message, with only the error's name and message logged to stderr and anything shaped like a token cut out first.
+* A bad `deck_id` (`"abc"`, `-4`, `3.5`) is rejected by the SDK before the handler runs. It reaches the assistant as an error result with a one-line reason, which the tests pin word for word, and none of them reach the client.
+* Added a smoke test that starts the built server as a real process, checks it lists exactly the two tools, and checks stdout holds nothing but protocol messages. `npm test` builds first through `pretest`, and a missing build fails with a clear message instead of being skipped.
+* Broke the code on purpose again: a `console.log` added to the build failed the stdout check, and removing `.positive()` from the `deck_id` schema failed four tests.
+* Added `.env.example` as documentation only. There is no library to load it, because Node 24's `--env-file` does that, and a new dependency would only add supply-chain risk. Rewrote the `mcp-server` README with setup, the two variables, the tools, and an example Claude Desktop config with a placeholder token.
+* The `mcp-server` suite is at 157 tests.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -248,7 +261,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
-* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas for the deck list and a full deck, and the API client with its error handling (110 tests). Next: the two tools themselves, wiring the server to stdio, and a smoke test that lists them, then trying it in the MCP Inspector against my local backend with a real token.
+* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas, the API client with its error handling, the two tools wired to stdio, and a smoke test that lists them (157 tests). Next: trying it in the MCP Inspector against my local backend with a throwaway token, then disconnecting that token.
 
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
@@ -264,6 +277,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * Pokémon is still paused. The backend and database have since moved to paid Render plans, so measure live search latency before switching it back on.
 * Mention access tokens in the Privacy Policy.
+* Rate limit the endpoints that access tokens can reach. The backend has none yet, so an assistant stuck in a loop could send it a lot of requests.
 * Upgrade Vitest in the frontend and `mcp-server` together. `npm audit` reports two moderate advisories in Vitest 4.1.11, in dev tooling only (the production dependencies are clean). The fix is a patch release outside the exact version pin, so it goes in with the upgrade.
 
 ---
