@@ -111,7 +111,7 @@ Then ask Claude something like "which decks do I have in DeckDen?"
 The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is a web page for calling a server's tools by hand. With the server built and your `.env` filled in (a throwaway token is best), run this from this folder:
 
 ```bash
-npx @modelcontextprotocol/inspector node --env-file=.env dist/index.js
+npx @modelcontextprotocol/inspector@2.12.0 node --env-file=.env dist/index.js
 ```
 
 `npx` downloads the Inspector the first time. Open the page it prints, click **Connect**, open the **Tools** tab and click **List Tools**. You should see exactly `list_my_decks` and `get_deck`. Select one to try it.
