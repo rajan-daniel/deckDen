@@ -149,5 +149,6 @@ Rules to keep:
 
 - **Card tools** ("how does this card work?") need card effect text, which DeckDen doesn't store yet. That's a separate backend ticket.
 - **Changing decks.** Tokens are read-only, and the backend enforces that. Writing needs tokens that can write first.
+- **Resources and prompts.** MCP has two other features besides tools: resources (data the assistant can read) and prompts (ready-made prompt templates). This server only offers tools, so it doesn't advertise either.
 - **HTTP transport and publishing to npm.** The server runs locally over stdio from a local build.
 - **Pagination, caching and rate limiting.** Deck lists are short today, a cached copy could be stale, and the backend has no rate limit yet, so a looping assistant could send it a lot of requests.
