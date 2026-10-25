@@ -45,7 +45,7 @@ DeckDen is a deck-tracking app built for trading card game players who don't jus
 
 ## 📍 The Process
 
-DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and gained passkey sign-in, built as an addition to password login rather than a replacement. The latest work is letting AI assistants read a player's decks: read-only access tokens, and an MCP server being built on top of them.
+DeckDen started as a way to solve a problem I kept running into as a multi-game player myself, and grew from a basic deck CRUD app into a full account system with password recovery, self-service account deletion, and a proper design system — and gained passkey sign-in, built as an addition to password login rather than a replacement. The latest work is letting AI assistants read a player's decks: read-only access tokens, and an MCP server built on top of them.
 
 Rather than summarizing the process after the fact, the timeline below walks through how it actually came together — kept as short, in-the-moment notes rather than a polished retrospective, so the real decisions, bugs, and milestones stay visible instead of getting smoothed over.
 
@@ -247,6 +247,12 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 
 ---
 
+### 📅 10/24/2026
+
+* Checked both MCP tools in the MCP Inspector against my local backend, using a throwaway token from my account page, then disconnected that token on the account page. The automated tests use a fake `fetch`, so this is the one place the server meets the real backend and a real token.
+
+---
+
 ## 🎯 Final Outcome
 
 The result is a full-stack, multi-game deck tracker with real authentication, self-service password reset and account deletion, live card search across three different data sources, and a consistent, responsive design system — built around the idea that a player's identity should live in one place, not get split across a different app per game.
@@ -261,7 +267,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
-* **MCP server** — v1 is two read-only tools, `list_my_decks` and `get_deck`. Done so far: the scaffold, the config reader, the response schemas, the API client with its error handling, the two tools wired to stdio, and a smoke test that lists them (157 tests). Next: trying it in the MCP Inspector against my local backend with a throwaway token, then disconnecting that token.
+* **MCP server** — v1 is built: two read-only tools, `list_my_decks` and `get_deck`, served over stdio (157 tests), and checked in the MCP Inspector against my local backend with a throwaway token that I disconnected afterwards. What's left for the MCP work is the card tools, which wait on importing card effect text (ticket #30), and rate limiting, which is in the follow-ups below.
 
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
