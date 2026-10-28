@@ -1,10 +1,9 @@
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import type { JSONRPCMessage } from "@modelcontextprotocol/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { createServer } from "../src/server.js";
 import type { DeckClient } from "../src/tools.js";
-import { readFileSync } from "node:fs";
-
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -251,6 +250,7 @@ describe("failures inside a tool", () => {
     expect(second.isError).toBeUndefined();
     expect(second.content).toEqual([{ type: "text", text: JSON.stringify(deck) }]);
   });
+});
 
 describe("initialize", () => {
   it("server version matches in package.json", async () => {
@@ -258,5 +258,4 @@ describe("initialize", () => {
 
     expect(host.serverVersion).toBe(version);
   });
-});
 });
