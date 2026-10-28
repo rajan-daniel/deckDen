@@ -3,6 +3,12 @@ import type { JSONRPCMessage } from "@modelcontextprotocol/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createServer } from "../src/server.js";
 import type { DeckClient } from "../src/tools.js";
+import { readFileSync } from "node:fs";
+
+
+const { version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+) as { version: string };
 
 const summary = {
   id: 7,
@@ -45,6 +51,7 @@ type Reply = {
     }[];
     content?: { type: string; text: string }[];
     isError?: boolean;
+    serverInfo?: { version: string };
   };
 };
 
@@ -82,7 +89,7 @@ async function startServer(client: DeckClient) {
     });
   }
 
-  await request("initialize", {
+  const init = await request("initialize", {
     protocolVersion: "2025-06-18",
     capabilities: {},
     clientInfo: { name: "test-host", version: "0.0.0" },
@@ -93,6 +100,7 @@ async function startServer(client: DeckClient) {
     listTools: async () => (await request("tools/list", {})).result!.tools!,
     callTool: async (name: string, args: unknown) =>
       (await request("tools/call", { name, arguments: args })).result!,
+    serverVersion: init.result!.serverInfo!.version,
   };
 }
 
@@ -243,4 +251,12 @@ describe("failures inside a tool", () => {
     expect(second.isError).toBeUndefined();
     expect(second.content).toEqual([{ type: "text", text: JSON.stringify(deck) }]);
   });
+
+describe("initialize", () => {
+  it("server version matches in package.json", async () => {
+    const host = await startServer(fakeClient());
+
+    expect(host.serverVersion).toBe(version);
+  });
+});
 });
