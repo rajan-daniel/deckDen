@@ -243,7 +243,7 @@ Rather than summarizing the process after the fact, the timeline below walks thr
 * Added a smoke test that starts the built server as a real process, checks it lists exactly the two tools, and checks stdout holds nothing but protocol messages. `npm test` builds first through `pretest`, and a missing build fails with a clear message instead of being skipped.
 * Broke the code on purpose again: a `console.log` added to the build failed the stdout check, and removing `.positive()` from the `deck_id` schema failed four tests.
 * Added `.env.example` as documentation only. There is no library to load it, because Node 24's `--env-file` does that, and a new dependency would only add supply-chain risk. Rewrote the `mcp-server` README with setup, the two variables, the tools, and an example Claude Desktop config with a placeholder token.
-* The `mcp-server` suite is at 158 tests.
+* The `mcp-server` suite is at 157 tests.
 
 ---
 
@@ -267,7 +267,7 @@ What started as a basic deck CRUD app grew into a complete account system with r
 
 * **Passkeys on the live site** — the feature is code-complete and tested, but the WebAuthn relying-party id and expected origin are read from environment variables that default to `localhost`. They need to be set to the real domain on the host, and then one real registration and sign-in needs to be verified end to end on the live site. Worth noting for later: passkeys are bound to that domain, so the final domain should be settled before real users start registering them.
 
-* **MCP server** — v1 is built: two read-only tools, `list_my_decks` and `get_deck`, served over stdio (158 tests), and checked in the MCP Inspector against my local backend with a throwaway token that I disconnected afterwards. What's left for the MCP work is the card tools, which wait on importing card effect text (ticket #30), and rate limiting, which is in the follow-ups below.
+* **MCP server** — v1 is built: two read-only tools, `list_my_decks` and `get_deck`, served over stdio, and checked in the MCP Inspector against my local backend with a throwaway token that I disconnected afterwards. What's left for the MCP work is the card tools, which wait on importing card effect text (ticket #30), and rate limiting, which is in the follow-ups below.
 
 **Known follow-ups from the passkey work** (noted along the way and deliberately not bundled into those PRs)
 
