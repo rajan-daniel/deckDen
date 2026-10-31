@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getCardSearchFn, NormalizedCard } from "@/lib/card-apis";
+import { cardAspect } from "@/lib/games";
+import { itemIndex } from "@/lib/motion";
 import { EmptyState, SearchIcon, ZoomIcon } from "@/app/components/empty-state";
 import { CardFocusModal, FocusedCard } from "@/app/components/card-focus-modal";
+import { CardImage } from "@/app/components/card-image";
 
 export type DeckSection = "main" | "extra";
 
@@ -11,6 +14,10 @@ type Props = {
   game: string;
   onSelectCard: (card: NormalizedCard, section?: DeckSection) => void;
 };
+
+// How many placeholder tiles to show while a search is in flight: enough to
+// fill the tray, so results replace them without the grid changing shape.
+const SKELETON_TILES = 12;
 
 export function CardSearch({ game, onSelectCard }: Props) {
   const [query, setQuery] = useState("");
@@ -21,6 +28,9 @@ export function CardSearch({ game, onSelectCard }: Props) {
 
   const isYugioh = game === "Yu-Gi-Oh!";
   const hasResults = results.length > 0;
+  const aspect = cardAspect(game);
+  const hasQuery = query.trim().length >= 2;
+  const showSkeleton = hasQuery && isSearching;
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -63,22 +73,32 @@ export function CardSearch({ game, onSelectCard }: Props) {
 
       <div className="tray">
         <div
+          aria-busy={showSkeleton}
           className={
-            hasResults
+            hasResults || showSkeleton
               ? "tray-body grid grid-cols-4 gap-3 items-start content-start"
               : "tray-body flex items-center justify-center"
           }
         >
-          {query.trim().length < 2 ? (
+          {!hasQuery ? (
             <EmptyState
               title="Search for a card to add it to your deck."
               icon={<SearchIcon className="h-7 w-7 text-neutral-600" />}
             />
           ) : isSearching ? (
-            <EmptyState
-              title="Searching..."
-              icon={<SearchIcon className="h-7 w-7 text-neutral-600" />}
-            />
+            <>
+              <span className="sr-only" role="status">
+                Searching...
+              </span>
+              {Array.from({ length: SKELETON_TILES }, (_, i) => (
+                <div key={i} className="grid-card" aria-hidden="true">
+                  <div
+                    className="card-image skeleton rounded-lg"
+                    style={{ aspectRatio: aspect, animationDelay: `${i * 60}ms` }}
+                  />
+                </div>
+              ))}
+            </>
           ) : searchFailed ? (
             <EmptyState
               title="Couldn't reach the card database. Check your connection and try again."
@@ -90,18 +110,20 @@ export function CardSearch({ game, onSelectCard }: Props) {
               icon={<SearchIcon className="h-7 w-7 text-neutral-600" />}
             />
           ) : (
-            results.map((card) =>
+            results.map((card, index) =>
               isYugioh ? (
-                <div key={card.externalId} className="grid-card group">
-                  <div className="grid-card-frame">
-                    {card.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.imageUrl} alt={card.name} className="grid-card-img" />
-                    ) : (
-                      <div className="p-2 text-xs min-h-24 flex items-center text-neutral-300">
-                        {card.name}
-                      </div>
-                    )}
+                <div
+                  key={card.externalId}
+                  className="grid-card tile-in group"
+                  style={itemIndex(index)}
+                >
+                  <CardImage
+                    src={card.imageUrl}
+                    alt={card.name}
+                    aspect={aspect}
+                    className="grid-card-frame"
+                    imgClassName="grid-card-img"
+                  >
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <div className="absolute inset-x-0 bottom-1.5 flex items-center justify-center gap-1.5 opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
                       <button
@@ -127,7 +149,7 @@ export function CardSearch({ game, onSelectCard }: Props) {
                     >
                       <ZoomIcon className="h-3.5 w-3.5" />
                     </button>
-                  </div>
+                  </CardImage>
                 </div>
               ) : (
                 <div
@@ -141,19 +163,18 @@ export function CardSearch({ game, onSelectCard }: Props) {
                       onSelectCard(card);
                     }
                   }}
-                  className="grid-card group text-left cursor-pointer"
+                  style={itemIndex(index)}
+                  className="grid-card tile-in group text-left cursor-pointer"
                 >
-                  <div className="grid-card-frame">
-                    {card.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.imageUrl} alt={card.name} className="grid-card-img" />
-                    ) : (
-                      <div className="p-2 text-xs min-h-24 flex items-center text-neutral-300">
-                        {card.name}
-                      </div>
-                    )}
+                  <CardImage
+                    src={card.imageUrl}
+                    alt={card.name}
+                    aspect={aspect}
+                    className="grid-card-frame"
+                    imgClassName="grid-card-img"
+                  >
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-purple-700 shadow-md translate-y-1 transition-transform duration-300 group-hover:translate-y-0">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-brand-dk shadow-md translate-y-1 transition-transform duration-300 group-hover:translate-y-0">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
@@ -175,7 +196,7 @@ export function CardSearch({ game, onSelectCard }: Props) {
                     >
                       <ZoomIcon className="h-3.5 w-3.5" />
                     </button>
-                  </div>
+                  </CardImage>
                 </div>
               ),
             )

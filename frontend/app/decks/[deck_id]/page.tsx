@@ -7,10 +7,13 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { CardSearch, DeckSection } from "@/app/components/card-search";
-import { GAME_ACCENT } from "@/lib/games";
+import { GAME_ACCENT, cardAspect } from "@/lib/games";
+import { itemIndex } from "@/lib/motion";
+import { CardImage } from "@/app/components/card-image";
 import { Loading } from "@/app/components/loading";
 import { EmptyState, CardStackIcon, ZoomIcon } from "@/app/components/empty-state";
 import { CardFocusModal, FocusedCard } from "@/app/components/card-focus-modal";
+import { PageBanner } from "@/app/components/page-banner";
 
 const EXTRA_DECK_CATEGORY = "Extra Deck";
 const MAIN_DECK_CATEGORY = "Main Deck";
@@ -216,21 +219,19 @@ export default function DeckDetailPage() {
   }
 
   const cardCount = deck.cards.reduce((sum, c) => sum + c.quantity, 0);
-  const accent = GAME_ACCENT[deck.game] ?? "bg-gradient-to-r from-sky-500 to-purple-600";
+  const accent = GAME_ACCENT[deck.game] ?? "bg-brand";
   const currentGame = deck.game;
 
-  function renderCardTile(card: DeckCard) {
+  function renderCardTile(card: DeckCard, index = 0) {
     return (
-      <div key={card.id} className="grid-card group">
-        <div className="grid-card-frame">
-          {card.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={card.image_url} alt={card.card_name} className="grid-card-img" />
-          ) : (
-            <div className="p-2 text-xs min-h-24 flex items-center text-neutral-300">
-              {card.card_name}
-            </div>
-          )}
+      <div key={card.id} className="grid-card tile-in group" style={itemIndex(index)}>
+        <CardImage
+          src={card.image_url}
+          alt={card.card_name}
+          aspect={cardAspect(currentGame)}
+          className="grid-card-frame"
+          imgClassName="grid-card-img"
+        >
           {isOwner && (
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           )}
@@ -244,7 +245,7 @@ export default function DeckDetailPage() {
           >
             <ZoomIcon className="h-3.5 w-3.5" />
           </button>
-        </div>
+        </CardImage>
 
         {card.quantity > 1 && <span className="qty-badge">×{card.quantity}</span>}
 
@@ -304,96 +305,91 @@ export default function DeckDetailPage() {
   const extraDeckCards = deck.cards.filter((c) => c.category === EXTRA_DECK_CATEGORY);
 
   return (
-    <div className="w-full max-w-7xl mx-auto mt-12 px-4 pb-16">
-      <div className="card-surface relative overflow-hidden p-6 mb-8">
-        <span className={`absolute top-0 left-0 right-0 h-1.5 ${accent}`} />
+    <>
+      <PageBanner tag="010101_DECK" title={deck.name} subtitle={deck.description ?? undefined}>
+        <span className={`rounded-full px-3 py-1 text-xs font-bold text-white ${accent}`}>
+          {deck.game}
+        </span>
+        {deck.format && <span className="badge">{deck.format}</span>}
+        {deck.play_style && <span className="badge">{deck.play_style}</span>}
+        {!deck.is_public && <span className="badge">Private</span>}
+        <span className="badge">
+          {cardCount} {cardCount === 1 ? "card" : "cards"}
+        </span>
+      </PageBanner>
 
-        <div className="flex justify-between items-start gap-4">
-          <h1 className="text-2xl font-semibold">{deck.name}</h1>
-          {!deck.is_public && <span className="badge shrink-0">Private</span>}
-        </div>
+      <div className="w-full max-w-7xl mx-auto mt-10 px-4 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {/* LEFT: search + results grid (owner only) */}
+          {isOwner && (
+            <div>
+              <h2 className="text-lg font-medium mb-3">Add cards</h2>
+              <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
+              {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
+            </div>
+          )}
 
-        <div className="flex items-center gap-2 mt-2">
-          <span className="badge-accent">{deck.game}</span>
-          {deck.format && <span className="badge">{deck.format}</span>}
-          {deck.play_style && <span className="badge">{deck.play_style}</span>}
-        </div>
-
-        {deck.description && (
-          <p className="text-neutral-300 mt-4">{deck.description}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        {/* LEFT: search + results grid (owner only) */}
-        {isOwner && (
+          {/* RIGHT: current deck as an image grid */}
           <div>
-            <h2 className="text-lg font-medium mb-3">Add cards</h2>
-            <CardSearch game={deck.game} onSelectCard={handleSelectCard} />
-            {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
+            <h2 className="text-lg font-medium mb-3">
+              Deck{" "}
+              <span className="text-neutral-400 font-normal">({cardCount})</span>
+            </h2>
+            {/* Matches the search bar's footprint on the left so both trays start at the same y-position */}
+            {isOwner && <div className="search-row" aria-hidden="true" />}
+
+            {isYugioh ? (
+              <div className="flex flex-col gap-6">
+                {renderSection("Main Deck", mainDeckCards, "default")}
+                {renderSection("Extra Deck", extraDeckCards, "sm")}
+              </div>
+            ) : (
+              <div className="tray">
+                <div
+                  className={
+                    deck.cards.length === 0
+                      ? "tray-body flex items-center justify-center"
+                      : "tray-body grid grid-cols-4 gap-3 items-start content-start"
+                  }
+                >
+                  {deck.cards.length === 0 ? (
+                    <EmptyState
+                      title="No cards added yet."
+                      icon={<CardStackIcon className="h-7 w-7 text-neutral-600" />}
+                    />
+                  ) : (
+                    deck.cards.map(renderCardTile)
+                  )}
+                </div>
+              </div>
+            )}
+
+            {cardActionError && (
+              <p className="text-red-400 text-sm mt-2">{cardActionError}</p>
+            )}
+          </div>
+        </div>
+
+        {isOwner && (
+          <div className="flex gap-3 mt-8 border-t border-neutral-800 pt-6">
+            <button
+              onClick={handleDone}
+              disabled={justSaved}
+              className="btn-primary py-2 px-4"
+            >
+              {justSaved ? "Saved" : "Done editing"}
+            </button>
+            <Link href={`/decks/${deckId}/edit`} className="btn-secondary py-2 px-4">
+              Edit deck
+            </Link>
+            <button onClick={handleDelete} className="btn-danger">
+              Delete deck
+            </button>
           </div>
         )}
 
-        {/* RIGHT: current deck as an image grid */}
-        <div>
-          <h2 className="text-lg font-medium mb-3">
-            Deck{" "}
-            <span className="text-neutral-400 font-normal">({cardCount})</span>
-          </h2>
-          {/* Matches the search bar's footprint on the left so both trays start at the same y-position */}
-          {isOwner && <div className="search-row" aria-hidden="true" />}
-
-          {isYugioh ? (
-            <div className="flex flex-col gap-6">
-              {renderSection("Main Deck", mainDeckCards, "default")}
-              {renderSection("Extra Deck", extraDeckCards, "sm")}
-            </div>
-          ) : (
-            <div className="tray">
-              <div
-                className={
-                  deck.cards.length === 0
-                    ? "tray-body flex items-center justify-center"
-                    : "tray-body grid grid-cols-4 gap-3 items-start content-start"
-                }
-              >
-                {deck.cards.length === 0 ? (
-                  <EmptyState
-                    title="No cards added yet."
-                    icon={<CardStackIcon className="h-7 w-7 text-neutral-600" />}
-                  />
-                ) : (
-                  deck.cards.map(renderCardTile)
-                )}
-              </div>
-            </div>
-          )}
-
-          {cardActionError && (
-            <p className="text-red-400 text-sm mt-2">{cardActionError}</p>
-          )}
-        </div>
+        <CardFocusModal card={focusedCard} onClose={() => setFocusedCard(null)} />
       </div>
-
-      {isOwner && (
-        <div className="flex gap-3 mt-8 border-t border-neutral-800 pt-6">
-          <button
-            onClick={handleDone}
-            disabled={justSaved}
-            className="btn-primary py-2 px-4"
-          >
-            {justSaved ? "Saved" : "Done editing"}
-          </button>
-          <Link href={`/decks/${deckId}/edit`} className="btn-secondary py-2 px-4">
-            Edit deck
-          </Link>
-          <button onClick={handleDelete} className="btn-danger">
-            Delete deck
-          </button>
-        </div>
-      )}
-
-      <CardFocusModal card={focusedCard} onClose={() => setFocusedCard(null)} />
-    </div>
+    </>
   );
 }

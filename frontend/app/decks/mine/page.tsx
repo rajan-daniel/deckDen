@@ -7,6 +7,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { ProtectedRoute } from "@/app/components/protected-route";
 import { Loading } from "@/app/components/loading";
 import { DeckCard, DeckSummary } from "@/app/components/deck-card";
+import { PageBanner } from "@/app/components/page-banner";
 
 function MyDecksList() {
   const { token } = useAuth();
@@ -29,39 +30,40 @@ function MyDecksList() {
     loadDecks();
   }, [token]);
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (error) {
-    return <div className="text-center mt-16 text-red-400">{error}</div>;
-  }
-
   return (
-    <div className="w-full max-w-5xl mx-auto mt-16 px-4 pb-16">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">My Decks</h1>
-        <Link href="/decks/new" className="btn-primary py-2 px-4">
+    <>
+      <PageBanner
+        tag="010101_MINE"
+        title="My Decks"
+        subtitle="Every deck you've built, across every game."
+      >
+        <Link href="/decks/new" className="btn-primary py-2.5 px-5">
           + New deck
         </Link>
-      </div>
+      </PageBanner>
 
-      {decks.length === 0 ? (
-        <p className="text-neutral-400 text-sm">
-          You haven&apos;t created any decks yet.{" "}
-          <Link href="/decks/new" className="text-sky-400 font-medium hover:underline">
-            Create your first one
-          </Link>
-          .
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-          {decks.map((deck) => (
-            <DeckCard key={deck.id} deck={deck} />
-          ))}
-        </div>
-      )}
-    </div>
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 pb-16 sm:px-6">
+        {isLoading ? (
+          <Loading />
+        ) : error ? (
+          <div className="text-center mt-8 text-red-400">{error}</div>
+        ) : decks.length === 0 ? (
+          <p className="text-neutral-400 text-sm">
+            You haven&apos;t created any decks yet.{" "}
+            <Link href="/decks/new" className="text-brand-hi font-medium hover:underline">
+              Create your first one
+            </Link>
+            .
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+            {decks.map((deck, i) => (
+              <DeckCard key={deck.id} deck={deck} index={i} />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

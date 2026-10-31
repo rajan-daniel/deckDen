@@ -66,9 +66,9 @@ export default function ContactPage() {
               <a
                 key={reason.label}
                 href={mailto(reason.subject)}
-                className="card-surface group p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-sky-500/50 hover:shadow-lg hover:shadow-purple-500/15"
+                className="card-surface group p-4 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lg hover:shadow-brand/20"
               >
-                <p className="font-medium text-neutral-100 group-hover:text-sky-400 transition-colors">
+                <p className="font-medium text-neutral-100 group-hover:text-brand-hi transition-colors">
                   {reason.label}
                 </p>
                 <p className="text-sm text-neutral-500 mt-1">{reason.detail}</p>
