@@ -2,9 +2,9 @@ import Link from "next/link";
 import { HeroCtas } from "@/app/components/hero-ctas";
 import { Icon, type IconName } from "@/app/components/icons";
 import { ScrollReveal } from "@/app/components/scroll-reveal";
+import { ChatCard } from "@/app/components/chat-demo";
 import {
   BuilderWindow,
-  ChatCard,
   DeckPreviewWindow,
   FannedGames,
   ProfilePhone,
@@ -65,9 +65,9 @@ export default function Home() {
         <div
           aria-hidden
           style={parallax(9)}
-          className="parallax brush-bg absolute -right-[22%] -top-[4%] -z-10 aspect-[1280/880] w-[120%] rotate-[8deg] opacity-80"
+          className="parallax brush-bg absolute -right-[22%] -top-[4%] -z-10 aspect-[1280/880] w-[120%] rotate-[8deg]"
         />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-background/35" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-background/10" />
         <div
           aria-hidden
           style={parallax(5)}
@@ -110,7 +110,7 @@ export default function Home() {
           <span className="badge-accent anim-rise" style={enterDelay(0)}>
             TCG deck tracker
           </span>
-          <h1 className="mt-6 font-serif text-[3.6rem] font-normal leading-[0.95] tracking-[-0.03em] text-white sm:text-[6rem] lg:text-[8.4rem]">
+          <h1 className="mt-6 font-display-xl text-[length:clamp(2rem,8.4vw,6.2rem)] uppercase leading-[1] text-white">
             <span className="line-mask">
               <span style={enterDelay(120)}>Every Deck,</span>
             </span>
@@ -308,7 +308,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          <div className="mt-14 h-[21rem] overflow-hidden">
+          <div className="mt-14 pb-24 lg:pb-28">
             <div data-reveal="up-lg" style={revealDelay(100)}>
               <ChatCard />
             </div>
@@ -331,7 +331,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-4xl px-6 py-28 text-center">
           <h2
             data-reveal="scale"
-            className="font-serif text-[4rem] font-normal leading-none tracking-[-0.03em] text-white sm:text-[7rem]"
+            className="font-display-xl text-[length:clamp(1.8rem,8vw,5rem)] uppercase leading-none text-white"
           >
             Join the den<span className="text-brand-hi">.</span>
           </h2>

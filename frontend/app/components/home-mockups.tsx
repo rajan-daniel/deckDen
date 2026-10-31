@@ -7,9 +7,12 @@ import { Icon } from "./icons";
 // They are built from plain markup (no data fetching) and use placeholder art.
 // Their lists carry data-reveal / --i hooks so they animate as they scroll in.
 
+// Placeholder card art. Monsters and Union Arena keep their game colors (the
+// same ones as the game chips); Spell and Trap stay inside the site's crimson
+// and wine range so no stray hue fights the theme.
 const YGO: [string, string] = ["#8b5cf6", "#c026d3"];
-const SPELL: [string, string] = ["#10b981", "#065f46"];
-const TRAP: [string, string] = ["#f43f5e", "#881337"];
+const SPELL: [string, string] = ["#e0485b", "#8f1d2d"];
+const TRAP: [string, string] = ["#9d3a63", "#3a1226"];
 const UA: [string, string] = ["#38bdf8", "#2563eb"];
 
 function WindowFrame({
@@ -27,9 +30,9 @@ function WindowFrame({
       className={`overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl shadow-black/60 ${className}`}
     >
       <div className="flex items-center gap-2 border-b border-neutral-800 bg-ink px-4 py-2.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-brand-hi" />
+        <span className="h-2.5 w-2.5 rounded-full bg-neutral-600" />
+        <span className="h-2.5 w-2.5 rounded-full bg-neutral-700" />
         <span className="mx-auto w-full max-w-sm truncate rounded-full bg-neutral-800 px-4 py-1 text-center text-[11px] text-neutral-400">
           {url}
         </span>
@@ -286,43 +289,6 @@ export function ProfilePhone() {
             </li>
           ))}
         </ul>
-      </div>
-    </div>
-  );
-}
-
-export function ChatCard() {
-  return (
-    <div
-      aria-hidden="true"
-      className="mx-auto w-full max-w-xl rounded-t-[1.75rem] border border-neutral-800 bg-[#101014] p-5 shadow-2xl shadow-black/60 sm:p-6"
-    >
-      {/* The conversation plays out in order once the card is on screen. */}
-      <div data-reveal="stagger" style={motionStyle(revealDelay(700), staggerGap(520))}>
-        <div className="flex items-center gap-2.5" style={itemIndex(0)}>
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white">
-            <Icon name="spark" className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-bold text-white">Claude</span>
-        </div>
-        <p
-          style={itemIndex(1)}
-          className="ml-auto mt-4 w-fit max-w-[85%] rounded-2xl bg-neutral-800 px-4 py-2.5 text-sm font-medium text-white"
-        >
-          Which decks do I have in DeckDen?
-        </p>
-        <p
-          style={itemIndex(2)}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-brand-dk bg-[#1b1115] px-3 py-1 text-xs font-semibold text-[#f4b9c1]"
-        >
-          <Icon name="shield" className="h-3.5 w-3.5 text-brand-hi" />
-          list_my_decks · read-only
-        </p>
-        <p style={itemIndex(3)} className="mt-3 text-sm leading-relaxed text-neutral-200">
-          You have two decks. Dark Magician Control is a Yu-Gi-Oh! deck with 40 cards. Bleach Aggro is a
-          Union Arena deck with 50 cards. Want the card list for either?
-        </p>
-        <div style={itemIndex(4)} className="mt-5 h-10 rounded-full border border-neutral-800 bg-neutral-900" />
       </div>
     </div>
   );

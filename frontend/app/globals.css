@@ -20,7 +20,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-archivo), "Arial Black", Arial, sans-serif;
-  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -172,7 +171,7 @@ body {
   }
   /* The dry-brush swoosh, pre-rendered so the page never runs SVG filters. */
   .brush-bg {
-    background-image: url("/brand/brush.png");
+    background-image: url("/brand/brush.webp");
     background-repeat: no-repeat;
     background-size: contain;
     pointer-events: none;
@@ -456,6 +455,10 @@ body {
   animation: fade-in 0.8s ease-out both;
   animation-delay: var(--d, 0ms);
 }
+/* Each headline line stands on its own whether or not it moves. */
+.line-mask {
+  display: block;
+}
 .line-mask > span {
   animation: fade-in 0.9s ease-out both;
   animation-delay: var(--d, 0ms);
@@ -608,7 +611,6 @@ body {
   /* A headline line that slides up out of a mask. The padding and negative
      margin give descenders and tall capitals room inside the clip. */
   .line-mask {
-    display: block;
     overflow: hidden;
     padding-block: 0.12em;
     margin-block: -0.12em;
@@ -706,5 +708,224 @@ body {
         transform: scaleX(1);
       }
     }
+  }
+}
+
+
+/* ---- AI chat demo (app/components/chat-demo.tsx) ----
+   Every part is in the markup all the time, so the card never changes size and
+   the finished conversation shows without JavaScript. The script arms the card
+   (data-armed), which hides the parts, then reveals them in order by adding
+   names to data-reached. Fades only by default; movement and looping motion
+   (bouncing dots, the spinner, the press of the send button) are added for
+   visitors who allow motion, and pulses stand in for them otherwise. */
+@keyframes chat-caret {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes chat-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes chat-dot {
+  0%,
+  60%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translate3d(0, -4px, 0);
+    opacity: 1;
+  }
+}
+@keyframes chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes chat-ring {
+  from {
+    box-shadow: 0 0 0 0 rgb(224 72 91 / 0.55);
+  }
+  to {
+    box-shadow: 0 0 0 9px rgb(224 72 91 / 0);
+  }
+}
+
+.chat [data-part="user"],
+.chat [data-part="chip"],
+.chat [data-part="follow"] .chat-follow {
+  transition:
+    opacity 0.5s ease,
+    transform 0.7s var(--ease-out-expo),
+    border-color 0.6s ease;
+}
+.chat [data-part="dots"],
+.chat [data-part="spin"],
+.chat [data-part="check"] {
+  transition: opacity 0.35s ease;
+}
+.chat [data-part="dots"] {
+  transition-duration: 0.18s;
+}
+.chat [data-part="dots"],
+.chat [data-part="spin"] {
+  opacity: 0;
+}
+.chat [data-part="caret"] {
+  display: none;
+}
+
+/* The words are always laid out, so the paragraph is its final size from the
+   start and nothing reflows as they arrive. */
+.chat [data-word] {
+  position: relative;
+  display: inline-block;
+  transition:
+    opacity 0.3s ease,
+    transform 0.55s var(--ease-out-expo);
+}
+.chat [data-word][data-last]::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0.18em;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  background: var(--color-brand-hi);
+  animation: chat-caret 1s steps(1) infinite;
+}
+
+/* The tool call's result slides open once the call finishes. */
+.chat .chat-result {
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  transition:
+    grid-template-columns 0.7s var(--ease-out-expo),
+    opacity 0.5s ease;
+}
+.chat .chat-result > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ---- armed: nothing is shown until the script reaches it ---- */
+.chat[data-armed] [data-part="user"],
+.chat[data-armed] [data-part="chip"],
+.chat[data-armed] [data-part="follow"] .chat-follow,
+.chat[data-armed] [data-part="check"],
+.chat[data-armed] [data-word]:not([data-on="true"]) {
+  opacity: 0;
+}
+.chat[data-armed] .chat-result {
+  grid-template-columns: 0fr;
+  opacity: 0;
+}
+.chat[data-armed][data-reached~="user"] [data-part="user"],
+.chat[data-armed][data-reached~="tool"] [data-part="chip"],
+.chat[data-armed][data-reached~="toolDone"] [data-part="check"],
+.chat[data-armed][data-reached~="done"] [data-part="follow"] .chat-follow {
+  opacity: 1;
+}
+.chat[data-armed][data-reached~="toolDone"] .chat-result {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.chat[data-armed][data-reached~="tool"] [data-part="chip"] {
+  transition-delay: 0.14s;
+}
+.chat[data-armed][data-reached~="toolDone"] .chat-chip {
+  border-color: color-mix(in srgb, var(--color-brand) 60%, transparent);
+}
+.chat[data-armed] [data-part="follow"] .chat-follow {
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+
+/* Thinking dots live between "thinking" and the tool call. */
+.chat[data-reached~="thinking"]:not([data-reached~="tool"]) [data-part="dots"] {
+  opacity: 1;
+}
+/* The spinner turns while the tool runs, then the check takes its place. */
+.chat[data-reached~="tool"]:not([data-reached~="toolDone"]) [data-part="spin"] {
+  opacity: 1;
+}
+
+/* The message box: placeholder, then typed text with a caret, then a send
+   button that lights up while there is something to send. */
+.chat[data-reached~="typing"]:not([data-reached~="user"]) [data-part="placeholder"] {
+  display: none;
+}
+.chat[data-reached~="typing"]:not([data-reached~="user"]) [data-part="caret"] {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: -0.2em;
+  background: var(--color-brand-hi);
+  animation: chat-caret 1s steps(1) infinite;
+}
+.chat .chat-send {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.2s var(--ease-out-quart);
+}
+.chat[data-reached~="typing"]:not([data-reached~="user"]) .chat-send {
+  background-color: var(--color-brand);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat[data-reached~="thinking"]:not([data-reached~="tool"]) .chat-dot,
+  .chat[data-reached~="tool"]:not([data-reached~="toolDone"]) .chat-spin {
+    animation: chat-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat [data-part="user"] {
+    transform-origin: right bottom;
+  }
+  .chat [data-part="chip"] {
+    transform-origin: left center;
+  }
+  .chat[data-armed] [data-part="user"] {
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+  .chat[data-armed] [data-part="chip"] {
+    transform: translate3d(-8px, 6px, 0) scale(0.94);
+  }
+  .chat[data-armed] [data-part="follow"] .chat-follow {
+    transform: translate3d(0, 8px, 0);
+  }
+  .chat[data-armed] [data-word]:not([data-on="true"]) {
+    transform: translate3d(0, 5px, 0);
+  }
+  .chat[data-armed][data-reached~="user"] [data-part="user"],
+  .chat[data-armed][data-reached~="tool"] [data-part="chip"],
+  .chat[data-armed][data-reached~="done"] [data-part="follow"] .chat-follow {
+    transform: none;
+  }
+  .chat[data-reached~="thinking"]:not([data-reached~="tool"]) .chat-dot {
+    animation: chat-dot 1.15s ease-in-out infinite;
+  }
+  .chat[data-reached~="tool"]:not([data-reached~="toolDone"]) .chat-spin {
+    animation: chat-spin 0.85s linear infinite;
+  }
+  .chat .chat-send[data-pressed] {
+    transform: scale(0.84);
+  }
+  /* While Claude is working, its avatar gives off a slow ring. */
+  .chat[data-reached~="thinking"]:not([data-reached~="done"]) .chat-avatar {
+    animation: chat-ring 1.5s ease-out infinite;
   }
 }
