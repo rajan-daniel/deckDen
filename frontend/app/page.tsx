@@ -65,9 +65,9 @@ export default function Home() {
         <div
           aria-hidden
           style={parallax(9)}
-          className="parallax brush-bg absolute -right-[22%] -top-[4%] -z-10 aspect-[1280/880] w-[120%] rotate-[8deg]"
+          className="parallax brush-bg absolute -right-[22%] -top-[4%] -z-10 aspect-[1280/880] w-[120%] rotate-[8deg] opacity-80"
         />
-        <div aria-hidden className="absolute inset-0 -z-10 bg-background/10" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-background/35" />
         <div
           aria-hidden
           style={parallax(5)}

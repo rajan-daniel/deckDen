@@ -171,7 +171,7 @@ body {
   }
   /* The dry-brush swoosh, pre-rendered so the page never runs SVG filters. */
   .brush-bg {
-    background-image: url("/brand/brush.webp");
+    background-image: url("/brand/brush.png");
     background-repeat: no-repeat;
     background-size: contain;
     pointer-events: none;
