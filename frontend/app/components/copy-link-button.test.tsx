@@ -4,6 +4,8 @@ import { CopyLinkButton } from "./copy-link-button";
 
 // jsdom has no clipboard, so each test gets a fake one.
 const writeText = vi.fn();
+// Collects unhandled rejections for the blocked-clipboard test.
+const unhandled = vi.fn();
 
 function blockClipboard() {
   writeText.mockRejectedValue(new DOMException("Write permission denied.", "NotAllowedError"));
@@ -21,12 +23,15 @@ beforeEach(() => {
   vi.useFakeTimers();
   writeText.mockReset();
   writeText.mockResolvedValue(undefined);
+  unhandled.mockReset();
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   window.history.pushState({}, "", "/users/alice");
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  // Runs even when a test throws, so the listener can't leak into the next test.
+  process.off("unhandledRejection", unhandled);
 });
 
 describe("CopyLinkButton", () => {
@@ -56,13 +61,11 @@ describe("CopyLinkButton", () => {
     // A copy that isn't caught shows up as an unhandled rejection, which Node
     // reports a tick later, so this test needs the real clock to see it.
     vi.useRealTimers();
-    const unhandled = vi.fn();
     process.on("unhandledRejection", unhandled);
 
     blockClipboard();
     await clickCopy();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    process.off("unhandledRejection", unhandled);
 
     // It did try to copy, nothing blew up, and nothing changed on screen.
     expect(writeText).toHaveBeenCalledTimes(1);
