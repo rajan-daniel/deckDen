@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import { Loading } from "@/app/components/loading";
 import { DeckCard, DeckSummary } from "@/app/components/deck-card";
+import { PageBanner } from "@/app/components/page-banner";
+import { CopyLinkButton } from "@/app/components/copy-link-button";
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -36,25 +38,40 @@ export default function UserProfilePage() {
     return <div className="text-center mt-16 text-red-400">{error}</div>;
   }
 
-  return (
-    <div className="w-full max-w-5xl mx-auto mt-16 px-4 pb-16">
-      <div className="flex items-center gap-3 mb-1">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-purple-600 text-white font-semibold shadow-sm shadow-purple-500/20">
-          {username.slice(0, 1).toUpperCase()}
-        </span>
-        <h1 className="text-2xl font-semibold">{username}</h1>
-      </div>
-      <p className="text-neutral-400 text-sm mb-8 ml-[52px]">Public decks</p>
+  const gameCount = new Set(decks.map((deck) => deck.game)).size;
 
-      {decks.length === 0 ? (
-        <p className="text-neutral-400 text-sm">No public decks yet.</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-          {decks.map((deck) => (
-            <DeckCard key={deck.id} deck={deck} />
-          ))}
-        </div>
-      )}
-    </div>
+  return (
+    <>
+      <PageBanner
+        tag="010101_PROFILE"
+        title={username}
+        leading={
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-2xl font-extrabold text-white shadow-lg shadow-brand/30 sm:h-16 sm:w-16">
+            {username.slice(0, 1).toUpperCase()}
+          </span>
+        }
+        subtitle="Public decks"
+      >
+        <span className="badge">
+          {decks.length} {decks.length === 1 ? "deck" : "decks"}
+        </span>
+        <span className="badge">
+          {gameCount} {gameCount === 1 ? "game" : "games"}
+        </span>
+        <CopyLinkButton />
+      </PageBanner>
+
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 pb-16 sm:px-6">
+        {decks.length === 0 ? (
+          <p className="text-neutral-400 text-sm">No public decks yet.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+            {decks.map((deck, i) => (
+              <DeckCard key={deck.id} deck={deck} index={i} />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

@@ -43,3 +43,15 @@ export const GAME_ACCENT: Record<string, string> = Object.fromEntries(
 export const GAME_LOGO: Record<string, string> = Object.fromEntries(
   ALL_GAMES.map((g) => [g.name, g.logo])
 );
+
+// Printed card proportions (width / height). Yu-Gi-Oh! cards are slightly
+// narrower than the 63 x 88 mm size the other games use. Card images reserve
+// this shape before they load, so a tile never changes size when art arrives.
+const CARD_ASPECT: Record<string, string> = {
+  "Yu-Gi-Oh!": "59 / 86",
+};
+export const DEFAULT_CARD_ASPECT = "63 / 88";
+
+export function cardAspect(game?: string): string {
+  return (game && CARD_ASPECT[game]) || DEFAULT_CARD_ASPECT;
+}

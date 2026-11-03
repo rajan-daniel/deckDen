@@ -83,7 +83,7 @@ export default function LoginPage() {
           />
           <Link
             href="/forgot-password"
-            className="text-sm text-sky-400 font-medium hover:underline self-end -mt-2"
+            className="text-sm text-brand-hi font-medium hover:underline self-end -mt-2"
           >
             Forgot password?
           </Link>
@@ -116,7 +116,7 @@ export default function LoginPage() {
         </form>
         <p className="text-sm text-neutral-400 mt-6 text-center">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-sky-400 font-medium hover:underline">
+          <Link href="/signup" className="text-brand-hi font-medium hover:underline">
             Sign up
           </Link>
         </p>

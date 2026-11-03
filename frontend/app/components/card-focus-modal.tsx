@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { cardAspect } from "@/lib/games";
+import { CardImage } from "./card-image";
 
 export type FocusedCard = {
   name: string;
@@ -61,7 +63,7 @@ export function CardFocusModal({ card, onClose }: Props) {
       </button>
 
       <div
-        className="flex flex-col items-center gap-4 max-w-[90vw] max-h-[90vh]"
+        className="modal-pop flex flex-col items-center gap-4 max-w-[90vw] max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {card.imageUrl ? (
@@ -70,13 +72,19 @@ export function CardFocusModal({ card, onClose }: Props) {
           // edge — on a tightly-cropped source image (Yu-Gi-Oh's card art
           // especially) hugging the radius directly to the art cut into the
           // card's own corners.
+          //
+          // The art box has its final height and shape from the first paint,
+          // so the frame doesn't open as a thin sliver and then grow when the
+          // image arrives: a skeleton holds the space until the picture fades in.
           <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-2.5 shadow-2xl shadow-black/60 max-w-[90vw] max-h-[85vh]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <CardImage
               src={card.imageUrl}
               alt={card.name}
+              aspect={cardAspect(card.game)}
+              priority
+              className="max-h-[80vh] max-w-[85vw] rounded-lg"
               style={{ height: focusHeight }}
-              className="max-h-[80vh] max-w-[85vw] w-auto object-contain rounded-lg"
+              imgClassName="object-contain"
             />
           </div>
         ) : (

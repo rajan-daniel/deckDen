@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #08090d;
-  --foreground: #f2f4f7;
+  --background: #0c0c0f;
+  --foreground: #ffffff;
+}
+
+@theme {
+  /* Brand palette: the crimson from the team banner, on charcoal. */
+  --color-brand: #c8283c;
+  --color-brand-hi: #e0485b; /* small red text: ~4.9:1 on the page background */
+  --color-brand-dk: #8f1d2d;
+  --color-brush: #a32a3b;
+  --color-ink: #08080a; /* footer / deepest surfaces */
 }
 
 @theme inline {
@@ -10,6 +19,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-archivo), "Arial Black", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
 body {
@@ -19,7 +34,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-sky-400) 40%, var(--color-purple-500) 40%);
+  background: var(--color-brand);
   color: white;
 }
 
@@ -48,45 +63,52 @@ body {
   /* Buttons — each variant repeats the shared base utilities because
      Tailwind v4 @apply cannot chain one custom component class into another. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold
       transition-all duration-200 ease-out
       disabled:opacity-50 disabled:pointer-events-none
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
-      bg-gradient-to-r from-sky-500 to-purple-600 text-white px-5 py-2.5
-      shadow-md shadow-purple-500/30
-      hover:shadow-lg hover:shadow-purple-500/40 hover:-translate-y-0.5
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-hi focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      bg-brand text-white px-5 py-2.5
+      shadow-lg shadow-brand/30
+      hover:bg-brand-hi hover:shadow-xl hover:shadow-brand/40 hover:-translate-y-0.5
       active:translate-y-0 active:shadow-md;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold
       transition-all duration-200 ease-out
       disabled:opacity-50 disabled:pointer-events-none
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
-      bg-neutral-900 border border-neutral-700 text-neutral-200 px-5 py-2.5
-      hover:border-sky-500/60 hover:text-sky-300 hover:bg-neutral-800 hover:-translate-y-0.5
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-hi focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      bg-transparent border border-neutral-500 text-white px-5 py-2.5
+      hover:border-white hover:bg-white/10 hover:-translate-y-0.5
       active:translate-y-0;
+  }
+  .btn-outline-brand {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold
+      transition-all duration-200 ease-out
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-hi focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      bg-transparent border border-brand text-white px-5 py-2.5
+      hover:bg-brand/15 hover:border-brand-hi;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
       transition-all duration-200 ease-out
       disabled:opacity-50 disabled:pointer-events-none
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
-      text-neutral-400 px-4 py-2 hover:text-neutral-100 hover:bg-neutral-800/70;
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-hi focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      text-neutral-300 px-4 py-2 hover:text-white hover:bg-white/10;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium
       transition-all duration-200 ease-out
       disabled:opacity-50 disabled:pointer-events-none
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
-      text-red-400 px-4 py-2 hover:bg-red-500/10 hover:text-red-300;
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950
+      text-red-300 border border-red-400/30 px-4 py-2 hover:bg-red-500/10 hover:text-red-200;
   }
 
   /* Inputs */
   .input-field {
-    @apply w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-sm text-neutral-100
+    @apply w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-sm text-white
       placeholder:text-neutral-500 shadow-sm shadow-black/20
       transition duration-150
-      focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:border-sky-400;
+      focus:outline-none focus:ring-2 focus:ring-brand-hi/40 focus:border-brand-hi;
   }
 
   /* Fixed-height row reserved for the search bar above the "Add cards" tray.
@@ -104,7 +126,28 @@ body {
 
   /* Text */
   .gradient-text {
-    @apply bg-gradient-to-r from-sky-400 to-purple-500 bg-clip-text text-transparent;
+    @apply text-brand-hi;
+  }
+  /* Heavy, extended display type for page titles and tags (Archivo, width axis). */
+  .font-display-xl {
+    font-family: var(--font-archivo), "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    font-stretch: 125%;
+    font-variation-settings: "wdth" 125;
+    letter-spacing: -0.01em;
+  }
+  /* Small mono labels in the style of the team banner: "010101_01" */
+  .mono-tag {
+    @apply font-mono text-[11px] tracking-[0.18em] text-brand-hi uppercase;
+  }
+  /* Outlined display text (used rotated along the edge of the hero) */
+  .outline-text {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--color-brand);
+  }
+  .vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
   }
 
   /* Badges */
@@ -112,9 +155,26 @@ body {
     @apply inline-flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800/80
       px-2.5 py-1 text-xs font-medium text-neutral-300;
   }
+  /* The red label tag from the banner ("TEAM") */
   .badge-accent {
-    @apply inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-sky-500/15 to-purple-500/15
-      border border-sky-500/30 px-2.5 py-1 text-xs font-medium text-sky-300;
+    @apply inline-flex items-center gap-1 rounded-[3px] bg-brand
+      px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white;
+  }
+
+  /* Halftone dots that fade out toward the edges. Position it with utilities. */
+  .halftone {
+    background-image: radial-gradient(circle, rgb(255 255 255 / 0.9) 1.4px, transparent 1.6px);
+    background-size: 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse at center, #000 0%, transparent 70%);
+    pointer-events: none;
+  }
+  /* The dry-brush swoosh, pre-rendered so the page never runs SVG filters. */
+  .brush-bg {
+    background-image: url("/brand/brush.png");
+    background-repeat: no-repeat;
+    background-size: contain;
+    pointer-events: none;
   }
 
   /* Hoverable grid cards (deck results, search results).
@@ -127,7 +187,7 @@ body {
   .grid-card {
     @apply relative rounded-2xl border border-neutral-800 bg-neutral-900 p-1.5
       shadow-sm shadow-black/30 transition-all duration-300 ease-out
-      hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-sky-500/60;
+      hover:-translate-y-1 hover:shadow-xl hover:shadow-brand/25 hover:border-brand/70;
   }
   .grid-card-frame {
     @apply relative overflow-hidden rounded-lg bg-neutral-950;
@@ -157,23 +217,24 @@ body {
 
   /* Quantity pill for stacked duplicate cards in a grid-card */
   .qty-badge {
-    @apply absolute top-1 left-1 z-10 rounded-full bg-gradient-to-r from-sky-500 to-purple-600
-      px-2 py-0.5 text-[11px] font-semibold text-white shadow-md shadow-black/40;
+    @apply absolute top-1 left-1 z-10 rounded-full bg-brand
+      px-2 py-0.5 text-[11px] font-bold text-white shadow-md shadow-black/40;
   }
 
   /* "Add to Main/Extra deck" pills on Yu-Gi-Oh! search results — same pill
-     shape/weight/shadow language as .qty-badge, just recolored per target. */
+     shape/weight/shadow language as .qty-badge. Red is the brand color now, so
+     the two targets are told apart by red (Main) versus white (Extra). */
   .pill-btn-main {
-    @apply rounded-full px-2.5 py-1 text-[11px] font-semibold text-white
+    @apply rounded-full px-2.5 py-1 text-[11px] font-bold text-white
       shadow-md shadow-black/40 transition-all duration-150
-      bg-gradient-to-r from-sky-500 to-sky-600
-      hover:-translate-y-0.5 hover:shadow-lg hover:shadow-sky-500/40;
+      bg-brand
+      hover:-translate-y-0.5 hover:bg-brand-hi hover:shadow-lg hover:shadow-brand/40;
   }
   .pill-btn-extra {
-    @apply rounded-full px-2.5 py-1 text-[11px] font-semibold text-white
+    @apply rounded-full px-2.5 py-1 text-[11px] font-bold text-neutral-900
       shadow-md shadow-black/40 transition-all duration-150
-      bg-gradient-to-r from-purple-500 to-purple-600
-      hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/40;
+      bg-neutral-100
+      hover:-translate-y-0.5 hover:bg-white hover:shadow-lg hover:shadow-white/20;
   }
 
   /* Poster-style deck tile for deck-listing pages (Browse Decks, etc).
@@ -185,7 +246,7 @@ body {
   .deck-card {
     @apply relative flex flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900
       shadow-sm shadow-black/30 transition-all duration-300 ease-out
-      hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/20 hover:border-sky-500/60;
+      hover:-translate-y-1 hover:shadow-xl hover:shadow-brand/25 hover:border-brand/70;
   }
   .deck-card-art {
     @apply relative aspect-[3/4] w-full overflow-hidden bg-neutral-950;
@@ -207,8 +268,8 @@ body {
     @apply mt-auto flex items-center gap-2 pt-3 border-t border-neutral-800/70;
   }
   .deck-avatar {
-    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-purple-600
-      text-[11px] font-semibold text-white;
+    @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-dk
+      text-[11px] font-bold text-white;
   }
 
   /* Zoom/focus trigger shown on a grid-card's hover overlay — enlarges the
@@ -218,16 +279,16 @@ body {
     @apply absolute bottom-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full
       bg-white/95 text-neutral-700 shadow-md opacity-0 scale-90
       transition-all duration-200
-      hover:bg-sky-500 hover:text-white
+      hover:bg-brand hover:text-white
       group-hover:opacity-100 group-hover:scale-100;
   }
 
   /* Site footer */
   .footer-heading {
-    @apply text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3;
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-brand-hi mb-4;
   }
   .footer-link {
-    @apply text-sm text-neutral-400 hover:text-sky-400 transition-colors;
+    @apply text-sm text-neutral-400 hover:text-white transition-colors;
   }
 
   /* Shared prose styling for the static content pages (About, Contact,
@@ -235,7 +296,7 @@ body {
      so all four read as one uniform "document" instead of each page
      hand-rolling its own heading/paragraph spacing. */
   .legal-content h2 {
-    @apply text-lg font-semibold text-neutral-100 mt-10 mb-3 first:mt-0;
+    @apply text-lg font-semibold text-white mt-10 mb-3 first:mt-0;
   }
   .legal-content h3 {
     @apply text-base font-medium text-neutral-200 mt-6 mb-2;
@@ -244,16 +305,16 @@ body {
     @apply mb-4 text-neutral-400 leading-relaxed;
   }
   .legal-content ul {
-    @apply list-disc list-outside pl-5 mb-4 space-y-1.5 text-neutral-400 marker:text-sky-500;
+    @apply list-disc list-outside pl-5 mb-4 space-y-1.5 text-neutral-400 marker:text-brand-hi;
   }
   .legal-content a {
-    @apply text-sky-400 hover:underline font-medium;
+    @apply text-brand-hi hover:underline font-medium;
   }
   .legal-content strong {
     @apply text-neutral-200 font-medium;
   }
   .legal-content blockquote {
-    @apply border-l-2 border-sky-500 pl-4 my-6 text-neutral-200 italic;
+    @apply border-l-2 border-brand pl-4 my-6 text-neutral-200 italic;
   }
 }
 
@@ -269,4 +330,602 @@ body {
 }
 .animate-fade-in-up {
   animation: fade-in-up 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-in-up {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Motion
+   Everything here animates only opacity and transform (and the individual
+   transform properties), so it runs on the compositor and never shifts
+   layout.
+
+   Reduced motion: visitors who ask for it keep the fades but lose the
+   movement (slides, parallax, drifting, sweeping). That follows the usual
+   guidance: it is travel and scale that cause trouble, not a gentle fade, and
+   it keeps the page feeling finished rather than switched off. Each effect
+   below is written fade-first, with the movement added only inside
+   prefers-reduced-motion: no-preference.
+   ========================================================================== */
+
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.35, 0.64, 1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- Skeletons and card images -----------------------------------------
+   In the components layer so ordinary utility classes can still override them. */
+
+@layer components {
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: #16161b;
+  }
+  /* A highlight over the placeholder. By default it breathes (opacity only);
+     with motion allowed it sweeps across instead. */
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgb(255 255 255 / 0.05);
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* The image fills the frame the card reserved, and fades in once it has loaded. */
+  .card-image-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition:
+      opacity 0.5s var(--ease-out-quart),
+      transform 0.9s var(--ease-out-expo),
+      scale 0.4s var(--ease-out-quart);
+  }
+  .card-image-img[data-state="loaded"] {
+    opacity: 1;
+  }
+  .card-image-fallback {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    text-align: center;
+    background: #101014;
+  }
+  /* Once the picture is settled there is nothing left to shimmer. */
+  .card-image:has(> .card-image-img[data-state="loaded"])::after,
+  .card-image:has(> .card-image-img[data-state="error"])::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes skeleton-sweep {
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+/* ---- Entrances on load: fade by default, rise/slide with motion allowed ---- */
+.tile-in {
+  animation: fade-in 0.4s ease-out backwards;
+  animation-delay: calc(min(var(--i, 0), 11) * 30ms);
+}
+.modal-pop {
+  animation: fade-in 0.3s ease-out both;
+}
+/* Route changes: remounted by app/template.tsx on every navigation. The
+   animation holds no transform afterwards, so fixed-position children (the
+   card zoom modal) still position against the viewport. */
+.page-enter {
+  animation: fade-in 0.3s ease-out backwards;
+}
+.anim-rise {
+  animation: fade-in 0.8s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+/* Each headline line stands on its own whether or not it moves. */
+.line-mask {
+  display: block;
+}
+.line-mask > span {
+  animation: fade-in 0.9s ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--rise, 26px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes line-up {
+  from {
+    transform: translate3d(0, 108%, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+
+/* ---- Scroll reveal ------------------------------------------------------
+   <ScrollReveal /> marks elements that start below the fold as hidden and
+   flips them to "shown" as they scroll into view. Anything already on screen
+   (or on a page without JavaScript) is simply visible. */
+[data-reveal] {
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    transform 0.9s var(--ease-out-expo),
+    translate 1s var(--ease-spring),
+    rotate 1s var(--ease-spring),
+    scale 1s var(--ease-spring);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal-state="hidden"]:not([data-reveal="stagger"]) {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+[data-reveal="fan"] {
+  transition-delay: calc(var(--i, 0) * 130ms + var(--reveal-delay, 0ms));
+}
+/* A group whose children arrive one after another (set --i on each child). */
+[data-reveal="stagger"] > * {
+  transition:
+    opacity 0.8s var(--ease-out-expo),
+    transform 0.8s var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * var(--stagger, 90ms) + var(--reveal-delay, 0ms));
+}
+[data-reveal="stagger"][data-reveal-state="hidden"] > * {
+  opacity: 0;
+}
+/* An icon badge that eases in after its item arrives. */
+.reveal-pop {
+  transition: scale 0.9s var(--ease-spring) calc(var(--i, 0) * var(--stagger, 90ms) + 0.18s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    transition-duration: 0.6s;
+  }
+  [data-reveal="stagger"] > * {
+    transition-duration: 0.6s;
+  }
+  .card-image-img {
+    transition: opacity 0.35s linear;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-fade-in-up {
+    animation: fade-in 0.4s ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    background: linear-gradient(100deg, transparent 15%, rgb(255 255 255 / 0.07) 50%, transparent 85%);
+    transform: translate3d(-100%, 0, 0);
+    animation: skeleton-sweep 1.5s ease-in-out infinite;
+  }
+  .card-image-img {
+    transform: scale(1.04);
+  }
+  .card-image-img[data-state="loaded"] {
+    transform: none;
+  }
+
+  .tile-in {
+    animation-name: tile-in;
+    animation-duration: 0.5s;
+    animation-timing-function: var(--ease-out-quart);
+  }
+  .modal-pop {
+    animation-name: modal-pop;
+    animation-duration: 0.45s;
+    animation-timing-function: var(--ease-out-expo);
+  }
+  .page-enter {
+    animation-name: page-enter;
+    animation-duration: 0.45s;
+    animation-timing-function: var(--ease-out-quart);
+  }
+  .anim-rise {
+    animation-name: rise;
+    animation-duration: 0.95s;
+    animation-timing-function: var(--ease-out-expo);
+  }
+  /* A headline line that slides up out of a mask. The padding and negative
+     margin give descenders and tall capitals room inside the clip. */
+  .line-mask {
+    overflow: hidden;
+    padding-block: 0.12em;
+    margin-block: -0.12em;
+  }
+  .line-mask > span {
+    display: block;
+    animation-name: line-up;
+    animation-duration: 1.15s;
+    animation-timing-function: var(--ease-out-expo);
+  }
+  .float {
+    animation: float 7s ease-in-out infinite;
+    animation-delay: var(--d, 0ms);
+  }
+
+  /* Movement for the reveals. */
+  [data-reveal="up"][data-reveal-state="hidden"] {
+    transform: translate3d(0, 32px, 0);
+  }
+  [data-reveal="up-lg"][data-reveal-state="hidden"] {
+    transform: translate3d(0, 80px, 0);
+  }
+  [data-reveal="left"][data-reveal-state="hidden"] {
+    transform: translate3d(-64px, 0, 0);
+  }
+  [data-reveal="right"][data-reveal-state="hidden"] {
+    transform: translate3d(64px, 0, 0);
+  }
+  [data-reveal="scale"][data-reveal-state="hidden"] {
+    transform: translate3d(0, 28px, 0) scale(0.94);
+  }
+  /* Cards that fan out from a stack: they animate the individual rotate,
+     translate and scale properties, so they start from the stacked pose and
+     settle into whatever rotation their own classes give them. */
+  [data-reveal="fan"][data-reveal-state="hidden"] {
+    rotate: 0deg;
+    translate: 0 3rem;
+    scale: 0.88;
+  }
+  [data-reveal="stagger"][data-reveal-state="hidden"] > * {
+    transform: translate3d(0, 22px, 0);
+  }
+  /* A progress bar that fills when its section is revealed. */
+  .reveal-bar {
+    transform-origin: left center;
+    transition: transform 1.4s var(--ease-out-expo) 0.35s;
+  }
+  [data-reveal-state="hidden"] .reveal-bar {
+    transform: scaleX(0);
+  }
+  [data-reveal-state="hidden"] .reveal-pop {
+    scale: 0.7;
+  }
+}
+
+/* ---- Scroll-linked effects: progressive enhancement. Browsers without
+   scroll-driven animations (animation-timeline) just show everything still. */
+.scroll-progress {
+  display: none;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Slow drift for backdrops: moves a little less than the page scrolls.
+       Strength is --parallax, as a percentage of the element's own height. */
+    .parallax {
+      animation: parallax-shift linear both;
+      animation-timeline: view();
+      will-change: transform;
+    }
+    @keyframes parallax-shift {
+      from {
+        transform: translate3d(0, calc(var(--parallax, 8) * -1%), 0);
+      }
+      to {
+        transform: translate3d(0, calc(var(--parallax, 8) * 1%), 0);
+      }
+    }
+    .scroll-progress {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 2px;
+      z-index: 60;
+      background: linear-gradient(90deg, var(--color-brand), var(--color-brand-hi));
+      transform-origin: 0 50%;
+      animation: scroll-progress linear both;
+      animation-timeline: scroll(root block);
+      pointer-events: none;
+    }
+    @keyframes scroll-progress {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+  }
+}
+
+
+/* ---- AI chat demo (app/components/chat-demo.tsx) ----
+   Every part is in the markup all the time, so the card never changes size and
+   the finished conversation shows without JavaScript. The script arms the card
+   (data-armed), which hides the parts, then reveals them in order by adding
+   names to data-reached. Fades only by default; movement and looping motion
+   (bouncing dots, the spinner, the press of the send button) are added for
+   visitors who allow motion, and pulses stand in for them otherwise. */
+@keyframes chat-caret {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes chat-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes chat-dot {
+  0%,
+  60%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translate3d(0, -4px, 0);
+    opacity: 1;
+  }
+}
+@keyframes chat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes chat-ring {
+  from {
+    box-shadow: 0 0 0 0 rgb(224 72 91 / 0.55);
+  }
+  to {
+    box-shadow: 0 0 0 9px rgb(224 72 91 / 0);
+  }
+}
+
+.chat [data-part="user"],
+.chat [data-part="chip"],
+.chat [data-part="follow"] .chat-follow {
+  transition:
+    opacity 0.5s ease,
+    transform 0.7s var(--ease-out-expo),
+    border-color 0.6s ease;
+}
+.chat [data-part="dots"],
+.chat [data-part="spin"],
+.chat [data-part="check"] {
+  transition: opacity 0.35s ease;
+}
+.chat [data-part="dots"] {
+  transition-duration: 0.18s;
+}
+.chat [data-part="dots"],
+.chat [data-part="spin"] {
+  opacity: 0;
+}
+.chat [data-part="caret"] {
+  display: none;
+}
+
+/* The words are always laid out, so the paragraph is its final size from the
+   start and nothing reflows as they arrive. */
+.chat [data-word] {
+  position: relative;
+  display: inline-block;
+  transition:
+    opacity 0.3s ease,
+    transform 0.55s var(--ease-out-expo);
+}
+.chat [data-word][data-last]::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0.18em;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  background: var(--color-brand-hi);
+  animation: chat-caret 1s steps(1) infinite;
+}
+
+/* The tool call's result slides open once the call finishes. */
+.chat .chat-result {
+  display: inline-grid;
+  grid-template-columns: 1fr;
+  transition:
+    grid-template-columns 0.7s var(--ease-out-expo),
+    opacity 0.5s ease;
+}
+.chat .chat-result > span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ---- armed: nothing is shown until the script reaches it ---- */
+.chat[data-armed] [data-part="user"],
+.chat[data-armed] [data-part="chip"],
+.chat[data-armed] [data-part="follow"] .chat-follow,
+.chat[data-armed] [data-part="check"],
+.chat[data-armed] [data-word]:not([data-on="true"]) {
+  opacity: 0;
+}
+.chat[data-armed] .chat-result {
+  grid-template-columns: 0fr;
+  opacity: 0;
+}
+.chat[data-armed][data-reached~="user"] [data-part="user"],
+.chat[data-armed][data-reached~="tool"] [data-part="chip"],
+.chat[data-armed][data-reached~="toolDone"] [data-part="check"],
+.chat[data-armed][data-reached~="done"] [data-part="follow"] .chat-follow {
+  opacity: 1;
+}
+.chat[data-armed][data-reached~="toolDone"] .chat-result {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.chat[data-armed][data-reached~="tool"] [data-part="chip"] {
+  transition-delay: 0.14s;
+}
+.chat[data-armed][data-reached~="toolDone"] .chat-chip {
+  border-color: color-mix(in srgb, var(--color-brand) 60%, transparent);
+}
+.chat[data-armed] [data-part="follow"] .chat-follow {
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+
+/* Thinking dots live between "thinking" and the tool call. */
+.chat[data-reached~="thinking"]:not([data-reached~="tool"]) [data-part="dots"] {
+  opacity: 1;
+}
+/* The spinner turns while the tool runs, then the check takes its place. */
+.chat[data-reached~="tool"]:not([data-reached~="toolDone"]) [data-part="spin"] {
+  opacity: 1;
+}
+
+/* The message box: placeholder, then typed text with a caret, then a send
+   button that lights up while there is something to send. */
+.chat[data-reached~="typing"]:not([data-reached~="user"]) [data-part="placeholder"] {
+  display: none;
+}
+.chat[data-reached~="typing"]:not([data-reached~="user"]) [data-part="caret"] {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: -0.2em;
+  background: var(--color-brand-hi);
+  animation: chat-caret 1s steps(1) infinite;
+}
+.chat .chat-send {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.2s var(--ease-out-quart);
+}
+.chat[data-reached~="typing"]:not([data-reached~="user"]) .chat-send {
+  background-color: var(--color-brand);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat[data-reached~="thinking"]:not([data-reached~="tool"]) .chat-dot,
+  .chat[data-reached~="tool"]:not([data-reached~="toolDone"]) .chat-spin {
+    animation: chat-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat [data-part="user"] {
+    transform-origin: right bottom;
+  }
+  .chat [data-part="chip"] {
+    transform-origin: left center;
+  }
+  .chat[data-armed] [data-part="user"] {
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+  .chat[data-armed] [data-part="chip"] {
+    transform: translate3d(-8px, 6px, 0) scale(0.94);
+  }
+  .chat[data-armed] [data-part="follow"] .chat-follow {
+    transform: translate3d(0, 8px, 0);
+  }
+  .chat[data-armed] [data-word]:not([data-on="true"]) {
+    transform: translate3d(0, 5px, 0);
+  }
+  .chat[data-armed][data-reached~="user"] [data-part="user"],
+  .chat[data-armed][data-reached~="tool"] [data-part="chip"],
+  .chat[data-armed][data-reached~="done"] [data-part="follow"] .chat-follow {
+    transform: none;
+  }
+  .chat[data-reached~="thinking"]:not([data-reached~="tool"]) .chat-dot {
+    animation: chat-dot 1.15s ease-in-out infinite;
+  }
+  .chat[data-reached~="tool"]:not([data-reached~="toolDone"]) .chat-spin {
+    animation: chat-spin 0.85s linear infinite;
+  }
+  .chat .chat-send[data-pressed] {
+    transform: scale(0.84);
+  }
+  /* While Claude is working, its avatar gives off a slow ring. */
+  .chat[data-reached~="thinking"]:not([data-reached~="done"]) .chat-avatar {
+    animation: chat-ring 1.5s ease-out infinite;
+  }
 }

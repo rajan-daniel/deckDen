@@ -50,7 +50,7 @@ function ResetPasswordForm() {
       <div className="w-full max-w-sm card-surface p-8 text-center">
         <p className="text-red-400 text-sm">
           This reset link is missing its token. Request a new one from the{" "}
-          <Link href="/forgot-password" className="text-sky-400 font-medium hover:underline">
+          <Link href="/forgot-password" className="text-brand-hi font-medium hover:underline">
             forgot password
           </Link>{" "}
           page.

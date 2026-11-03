@@ -150,7 +150,7 @@ function EditDeckForm() {
               type="checkbox"
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
-              className="h-4 w-4 rounded border-neutral-600 bg-neutral-900 text-sky-500 focus:ring-sky-400"
+              className="h-4 w-4 rounded border-neutral-600 bg-neutral-900 text-brand focus:ring-brand-hi"
             />
             Make this deck public
           </label>
