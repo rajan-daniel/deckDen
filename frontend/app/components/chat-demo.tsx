@@ -148,7 +148,11 @@ export function ChatCard() {
           <Icon name="spark" className="h-4 w-4" />
         </span>
         <span className="text-sm font-bold text-white">Claude</span>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.16em] text-neutral-500">
+        {/* A recorded-looking chat can pass for a live one, so say what it is. */}
+        <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
+          Example
+        </span>
+        <span className="ml-auto hidden font-mono text-[10px] uppercase tracking-[0.16em] text-neutral-500 sm:inline">
           MCP · read-only
         </span>
       </div>

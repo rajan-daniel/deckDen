@@ -19,6 +19,11 @@ import {
   staggerGap,
 } from "@/lib/motion";
 
+// The AI section's Learn more goes to the MCP server's README: what it needs (it
+// runs on your own computer) and how to set it up with Claude Desktop. The banner's
+// Learn more only scrolls to that section.
+const MCP_GUIDE = "https://github.com/rajan-daniel/deckDen/blob/main/mcp-server/README.md";
+
 const TRUST: { icon: IconName; title: string; body: string }[] = [
   {
     icon: "key",
@@ -53,9 +58,9 @@ export default function Home() {
       <div aria-hidden className="scroll-progress" />
 
       <div className="bg-brand px-4 py-2.5 text-center text-sm font-medium text-white">
-        <span className="font-extrabold">New:</span> connect Claude to your decks with a read-only
-        access token.{" "}
-        <a href="#ai" className="font-bold underline underline-offset-2">
+        <span className="font-extrabold">New:</span> connect Claude Desktop to your decks with a{" "}
+        <span className="whitespace-nowrap">read-only</span> access token.{" "}
+        <a href="#ai" className="whitespace-nowrap font-bold underline underline-offset-2">
           Learn more
         </a>
       </div>
@@ -291,21 +296,35 @@ export default function Home() {
         />
         <div className="mx-auto max-w-4xl px-6 pt-24 text-center lg:pt-28">
           <div data-reveal="stagger" style={staggerGap(120)}>
-            <h2 style={itemIndex(0)} className="text-5xl font-medium leading-[1.1] text-white sm:text-6xl">
+            <h2 style={itemIndex(0)} className="text-4xl font-medium leading-[1.1] text-white sm:text-6xl">
               Bring your decks to
               <br />
               your AI assistant
             </h2>
-            <p style={itemIndex(1)} className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-[#ffe9ec]">
-              Connect Claude Desktop with a read-only access token, then ask about your decks in plain words.
+            <p style={itemIndex(1)} className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-[#ffe9ec]">
+              Connect your AI assistant to the MCP server running locally on your computer.{" "}
+              <br className="hidden sm:block" />
+              Then ask about your decks in plain words, with a{" "}
+              <span className="whitespace-nowrap">read-only</span> token.
             </p>
-            <div style={itemIndex(2)}>
+            <div
+              style={itemIndex(2)}
+              className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-4"
+            >
               <Link
                 href="/account"
-                className="mt-9 inline-flex items-center justify-center rounded-full bg-[#0f0b0c] px-8 py-3.5 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-black active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-full bg-[#0f0b0c] px-8 py-3.5 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-black active:scale-[0.98]"
               >
                 Create an access token
               </Link>
+              <a
+                href={MCP_GUIDE}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-base font-semibold text-white underline underline-offset-4"
+              >
+                Learn more
+              </a>
             </div>
           </div>
           <div className="mt-14 pb-24 lg:pb-28">
