@@ -57,6 +57,17 @@ describe("MobileTabBar", () => {
       expect(screen.getByRole("link", { name: "My Profile" })).toHaveAttribute("href", "/users/alice");
     });
 
+    it("a username with special characters is encoded in its link", () => {
+      // encodeURI leaves "/" and "?" alone, so these also catch the wrong encoder, not just a missing one.
+      signIn("a b/c?");
+      renderTabBar();
+
+      expect(screen.getByRole("link", { name: "My Profile" })).toHaveAttribute(
+        "href",
+        "/users/a%20b%2Fc%3F",
+      );
+    });
+
     it("a signed-out visitor doesn't have one", () => {
       renderTabBar();
 
