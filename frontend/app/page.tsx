@@ -323,7 +323,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="text-base font-semibold text-white underline underline-offset-4"
               >
-                Learn more
+                Setup guide
               </a>
             </div>
           </div>
