@@ -49,6 +49,23 @@ describe("MobileTabBar", () => {
     expect(tabs()).toHaveLength(3);
   });
 
+  describe("My Profile tab", () => {
+    it("a signed-in player has one, linking to /users/<username>", () => {
+      signIn("alice");
+      renderTabBar();
+
+      expect(screen.getByRole("link", { name: "My Profile" })).toHaveAttribute("href", "/users/alice");
+    });
+
+    it("a signed-out visitor doesn't have one", () => {
+      renderTabBar();
+
+      // The bar did render (its Log in tab is there), so an empty bar can't pass this.
+      expect(screen.getByRole("link", { name: "Log in" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "My Profile" })).toBeNull();
+    });
+  });
+
   it('marks only the active tab with aria-current="page"', () => {
     signIn();
     pathname = "/decks/mine";
