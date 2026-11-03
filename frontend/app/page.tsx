@@ -301,8 +301,8 @@ export default function Home() {
               <br />
               your AI assistant
             </h2>
-            <p style={itemIndex(1)} className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-[#ffe9ec]">
-              Connect your AI assistant to the MCP server running locally on your computer.{" "}
+            <p style={itemIndex(1)} className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-[#ffe9ec]">
+              Connect Claude Desktop to the DeckDen MCP server running on your own computer.{" "}
               <br className="hidden sm:block" />
               Then ask about your decks in plain words, with a{" "}
               <span className="whitespace-nowrap">read-only</span> token.
